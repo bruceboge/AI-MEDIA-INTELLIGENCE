@@ -136,15 +136,6 @@ const DEFAULT_FEEDS = [
     category: 'Topic Wire - Corruption',
     color: '#f59e0b',
     active: true
-  },
-  {
-    id: 'social_pulse',
-    name: 'Social Media Political Pulse (X & Reddit)',
-    url: 'https://news.google.com/rss/search?q=Kenya+(site:x.com+OR+site:twitter.com+OR+site:reddit.com/r/kenya+OR+%22on+X%22+OR+%22Kenyans+on+X%22)+(politics+OR+Ruto+OR+Raila+OR+Gachagua+OR+protest+OR+corruption)&hl=en-KE&gl=KE&ceid=KE:en',
-    fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+Twitter+reactions+politics&hl=en-KE&gl=KE&ceid=KE:en',
-    category: 'Social Media Channels',
-    color: '#0ea5e9',
-    active: true
   }
 ];
 
@@ -296,6 +287,13 @@ const POLITICAL_TAXONOMY = {
       'audit',
       'procurement'
     ]
+  },
+  general: {
+    id: 'general',
+    label: 'Trending Across Media',
+    icon: '🌐',
+    color: '#6366f1',
+    keywords: []
   }
 };
 
@@ -345,7 +343,7 @@ const rssParser = new Parser({
   }
 });
 
-// Canonical Source Normalizer
+// Canonical Source Normalizer - Strictly verified Kenyan newsrooms
 function normalizeSourceName(rawSource, title, feed) {
   let s = (rawSource || '').trim();
   if (!s && title) {
@@ -363,8 +361,6 @@ function normalizeSourceName(rawSource, title, feed) {
   if (lower.includes('capital')) return { name: 'Capital FM', color: '#ea580c' };
   if (lower.includes('kbc')) return { name: 'KBC News', color: '#16a34a' };
   if (lower.includes('kenyans')) return { name: 'Kenyans.co.ke', color: '#2563eb' };
-  if (lower.includes('x.com') || lower.includes('twitter')) return { name: 'X (Twitter Kenya)', color: '#0ea5e9' };
-  if (lower.includes('reddit')) return { name: 'Reddit r/Kenya', color: '#ff4500' };
   if (lower.includes('ntv')) return { name: 'NTV Kenya', color: '#0d9488' };
   if (lower.includes('pulse')) return { name: 'Pulse Live Kenya', color: '#ec4899' };
   if (lower.includes('bbc')) return { name: 'BBC News Africa', color: '#b91c1c' };
@@ -374,63 +370,162 @@ function normalizeSourceName(rawSource, title, feed) {
   return { name: s || feed.name, color: feed.color || '#6366f1' };
 }
 
-// Political Article Classifier based on the 5 Taxonomy Categories
+// ===============================================================
+// AI / NLP SEMANTIC CLASSIFICATION SYSTEM
+// Prevents non-political news (sports, entertainment) from leaking
+// into political categories & political conflict.
+// ===============================================================
+
+const NON_POLITICAL_SPORTS_KEYWORDS = [
+  'premier league', 'epl', 'champions league', 'laliga', 'serie a', 'afcon',
+  'football', 'soccer', 'manchester united', 'man city', 'arsenal', 'chelsea', 'liverpool',
+  'real madrid', 'barcelona', 'bayern', 'gor mahia', 'afc leopards', 'tusker fc',
+  'harambee stars', 'harambee starlets', 'striker', 'midfielder', 'goalkeeper', 'head coach',
+  'coach', 'fifa', 'caf', 'fkf', 'athletics', 'marathon', 'kipchoge', 'kipyegon',
+  'shujaa', 'rugby sevens', 'rugby', 'basketball', 'boxing', 'tennis', 'formula 1', 'f1',
+  'transfer fee', 'transfer window', 'golden boot', 'clean sheet', 'hat-trick',
+  'penalty shootout', 'semi-final', 'quarter-final', 'stadium', 'match preview', 'epl clash'
+];
+
+const NON_POLITICAL_ENTERTAINMENT_KEYWORDS = [
+  'celebrity gossip', 'red carpet', 'baby mama', 'afrobeats', 'gengetone', 'song release',
+  'bongo flava', 'drama queen', 'socialite', 'influencer lifestyle', 'dating rumors', 'wedding photos'
+];
+
+const KENYAN_POLITICAL_CORE_ENTITIES = [
+  'ruto', 'william ruto', 'president ruto', 'rigathi', 'gachagua', 'raila', 'odinga',
+  'kalonzo', 'musyoka', 'matiang', 'kindiki', 'kithure kindiki', 'wetangula', 'moses wetangula',
+  'amason kingi', 'parliament', 'national assembly', 'senate', 'mp', 'mps', 'senator',
+  'governor', 'governors', 'mca', 'mcas', 'county assembly', 'devolution', 'cabinet',
+  'cabinet secretary', 'principal secretary', 'uda', 'odm', 'azimio', 'kenya kwanza',
+  'jubilee', 'wiper', 'iebc', 'eacc', 'dci', 'dpp', 'judiciary', 'supreme court',
+  'high court', 'chief justice', 'koome', 'impeachment', 'finance bill', 'shif', 'sha',
+  'maandamano', 'gen z', 'protest', 'teargas', 'police brutality', 'civil society',
+  'bribery', 'graft', 'tender scandal', 'corruption probe', 'auditor general', 'looted public funds',
+  'voter registration', 'election', 'by-election', 'nomination', 'tallying', 'ballot', 'order paper', 'hansard'
+];
+
 function classifyPoliticalArticle(title, content) {
   const combined = `${title || ''} ${content || ''}`.toLowerCase();
-  
-  let bestCategory = 'politics';
-  let maxMatches = -1;
-  let allMatchedKeywords = [];
+
+  // 1. Detect if this is clearly sports or entertainment
+  const isSports = NON_POLITICAL_SPORTS_KEYWORDS.some(kw => {
+    const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`\\b${escaped}\\b`, 'i').test(combined);
+  });
+  const isEntertainment = NON_POLITICAL_ENTERTAINMENT_KEYWORDS.some(kw => combined.includes(kw));
+
+  // Check if article mentions genuine Kenyan political entities
+  const hasPoliticalEntity = KENYAN_POLITICAL_CORE_ENTITIES.some(entity => {
+    const escaped = entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`\\b${escaped}`, 'i').test(combined);
+  });
+
+  // If article is sports/entertainment and lacks political entity, classify as GENERAL NEWS
+  if ((isSports || isEntertainment) && !hasPoliticalEntity) {
+    return {
+      politicalCategory: 'general',
+      politicalCategoryLabel: 'Trending Across Media',
+      politicalCategoryIcon: '🌐',
+      politicalCategoryColor: '#6366f1',
+      isPolitical: false,
+      isSports: true,
+      matchedKeywords: isSports ? ['sports'] : ['entertainment'],
+      relevanceScore: 0,
+      categoryScores: { general: 1 }
+    };
+  }
+
+  // 2. Score against the 5 Political Taxonomy Categories
   const categoryScores = {};
+  const matchedKeywordsPerCategory = {};
 
   for (const [catKey, catDef] of Object.entries(POLITICAL_TAXONOMY)) {
+    if (catKey === 'general') continue;
     let score = 0;
     const matchedHere = [];
+
     for (const kw of catDef.keywords) {
       const lowerKw = kw.toLowerCase();
-      // Match exact boundary or phrase
       const escaped = lowerKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`\\b${escaped}`, 'i');
       if (regex.test(combined)) {
+        // Guard against sports "clash"
+        if ((lowerKw === 'clash' || lowerKw === 'dispute') && isSports) {
+          continue;
+        }
+        // Guard against non-legislative "bill" (utility/hotel bill)
+        if (lowerKw === 'bill' && !combined.includes('parliament') && !combined.includes('senate') && !combined.includes('assembly') && !combined.includes('finance bill') && !combined.includes('act')) {
+          continue;
+        }
         score++;
         matchedHere.push(kw);
       }
     }
     categoryScores[catKey] = score;
-    if (matchedHere.length > 0) {
-      allMatchedKeywords.push(...matchedHere);
-    }
-    if (score > maxMatches) {
-      maxMatches = score;
+    matchedKeywordsPerCategory[catKey] = matchedHere;
+  }
+
+  // Find best scoring political category
+  let bestCategory = null;
+  let highestScore = 0;
+  for (const [catKey, score] of Object.entries(categoryScores)) {
+    if (score > highestScore) {
+      highestScore = score;
       bestCategory = catKey;
     }
   }
 
-  // If tied or zero matches, check prominent political terms
-  if (maxMatches === 0) {
-    if (combined.includes('election') || combined.includes('vote') || combined.includes('poll') || combined.includes('iebc')) {
-      bestCategory = 'elections';
-    } else if (combined.includes('parliament') || combined.includes('senate') || combined.includes('mp') || combined.includes('bill')) {
-      bestCategory = 'parliament';
-    } else if (combined.includes('protest') || combined.includes('clash') || combined.includes('dispute') || combined.includes('riot')) {
-      bestCategory = 'political_conflict';
-    } else if (combined.includes('corruption') || combined.includes('graft') || combined.includes('eacc') || combined.includes('bribe')) {
-      bestCategory = 'corruption';
+  // Verify political context for the chosen category
+  if (bestCategory && highestScore >= 1) {
+    // If categorized as political_conflict, ensure genuine civic/political context
+    if (bestCategory === 'political_conflict') {
+      const hasConflictProof = hasPoliticalEntity ||
+        combined.includes('protest') || combined.includes('police') || combined.includes('youth') ||
+        combined.includes('demonstrat') || combined.includes('strike') || combined.includes('boycott') ||
+        combined.includes('maandamano') || combined.includes('cabinet') || combined.includes('court');
+      if (!hasConflictProof) {
+        bestCategory = 'general';
+      }
+    }
+  } else {
+    // Zero keyword matches. If prominent political entity is present, assign appropriately
+    if (hasPoliticalEntity) {
+      if (combined.includes('election') || combined.includes('voter') || combined.includes('iebc') || combined.includes('campaign')) {
+        bestCategory = 'elections';
+      } else if (combined.includes('parliament') || combined.includes('senate') || combined.includes('national assembly') || combined.includes('mp')) {
+        bestCategory = 'parliament';
+      } else if (combined.includes('protest') || combined.includes('maandamano') || combined.includes('boycott') || combined.includes('deadlock')) {
+        bestCategory = 'political_conflict';
+      } else if (combined.includes('corruption') || combined.includes('graft') || combined.includes('eacc') || combined.includes('bribe')) {
+        bestCategory = 'corruption';
+      } else {
+        bestCategory = 'politics';
+      }
     } else {
-      bestCategory = 'politics';
+      // General Kenyan news (not political)
+      bestCategory = 'general';
     }
   }
 
-  const uniqueMatchedKeywords = Array.from(new Set(allMatchedKeywords));
-  const catMeta = POLITICAL_TAXONOMY[bestCategory];
+  const finalCat = bestCategory || 'general';
+  const catMeta = POLITICAL_TAXONOMY[finalCat] || {
+    id: 'general',
+    label: 'Trending Across Media',
+    icon: '🌐',
+    color: '#6366f1'
+  };
+
+  const matchedKeywords = matchedKeywordsPerCategory[finalCat] || [];
 
   return {
-    politicalCategory: bestCategory,
+    politicalCategory: finalCat,
     politicalCategoryLabel: catMeta.label,
     politicalCategoryIcon: catMeta.icon,
     politicalCategoryColor: catMeta.color,
-    matchedKeywords: uniqueMatchedKeywords,
-    relevanceScore: uniqueMatchedKeywords.length,
+    isPolitical: finalCat !== 'general',
+    matchedKeywords,
+    relevanceScore: matchedKeywords.length,
     categoryScores
   };
 }
@@ -449,7 +544,6 @@ function estimateEarlyRisk(title, content) {
   return 'LOW';
 }
 
-// Legacy topic helper for backwards compatibility
 function detectTopic(title, content, politicalCategoryLabel) {
   if (politicalCategoryLabel) return politicalCategoryLabel;
   const lower = `${title || ''} ${content || ''}`.toLowerCase();
@@ -1145,6 +1239,124 @@ app.post('/api/scan', async (req, res) => {
   }
 });
 
+// Compute what is trending under a given topic and from how many media outlets
+function computeTopicTrending(topicKey, articlesList) {
+  let matched = [];
+  if (!topicKey || topicKey === 'general' || topicKey === 'All' || topicKey === 'all') {
+    matched = articlesList;
+  } else {
+    matched = articlesList.filter(a => a.politicalCategory === topicKey || a.topic === topicKey);
+  }
+
+  const catMeta = POLITICAL_TAXONOMY[topicKey] || {
+    id: 'general',
+    label: 'Trending Across Media',
+    icon: '🌐',
+    color: '#6366f1'
+  };
+
+  if (!matched || matched.length === 0) {
+    return {
+      topic: topicKey || 'general',
+      topicLabel: catMeta.label,
+      topicIcon: catMeta.icon,
+      topicColor: catMeta.color,
+      totalArticles: 0,
+      trendingStory: null,
+      articles: []
+    };
+  }
+
+  // Pre-tokenize articles for clustering
+  const tokenized = matched.map(a => ({
+    art: a,
+    tokens: extractTitleTokens(a.title),
+    entities: PROMINENT_ENTITIES.filter(e => (a.title || '').toLowerCase().includes(e)),
+    sources: new Set([a.sourceName])
+  }));
+
+  // Build narrative clusters
+  const clusters = [];
+  const assigned = new Set();
+
+  tokenized.forEach((item, idx) => {
+    if (assigned.has(idx)) return;
+    const cluster = {
+      lead: item.art,
+      articles: [item.art],
+      sources: new Set([item.art.sourceName]),
+      tokens: new Set(item.tokens)
+    };
+    assigned.add(idx);
+
+    tokenized.forEach((other, oIdx) => {
+      if (assigned.has(oIdx)) return;
+      const common = other.tokens.filter(t => cluster.tokens.has(t));
+      const sharedEnt = other.entities.filter(e => item.entities.includes(e));
+      if (common.length >= 2 || (common.length >= 1 && sharedEnt.length >= 1) || sharedEnt.length >= 2) {
+        cluster.articles.push(other.art);
+        cluster.sources.add(other.art.sourceName);
+        other.tokens.forEach(t => cluster.tokens.add(t));
+        assigned.add(oIdx);
+      }
+    });
+
+    clusters.push(cluster);
+  });
+
+  // Sort clusters by: (1) distinct outlets count, (2) article count, (3) recency
+  clusters.sort((a, b) => {
+    if (b.sources.size !== a.sources.size) return b.sources.size - a.sources.size;
+    if (b.articles.length !== a.articles.length) return b.articles.length - a.articles.length;
+    return new Date(b.lead.pubDate) - new Date(a.lead.pubDate);
+  });
+
+  const topCluster = clusters[0] || {
+    lead: matched[0],
+    articles: [matched[0]],
+    sources: new Set([matched[0].sourceName])
+  };
+
+  const outletsArray = Array.from(topCluster.sources);
+  const outletCount = outletsArray.length;
+
+  const trendingStory = {
+    title: topCluster.lead.title,
+    summary: topCluster.lead.summary || `Trending development covered across Kenyan newsrooms regarding "${topCluster.lead.title}".`,
+    reportedByCount: outletCount,
+    outlets: outletsArray,
+    corroborationBadge: outletCount >= 3 
+      ? `🌟 Reported by ${outletCount} Media Outlets` 
+      : (outletCount === 2 ? `⚡ Reported by 2 Media Outlets` : `📰 Reported by 1 Outlet`),
+    corroborationTier: outletCount >= 3 ? 'MULTI_SOURCE' : (outletCount === 2 ? 'DUAL_SOURCE' : 'SINGLE_SOURCE'),
+    articleCount: topCluster.articles.length,
+    leadOutlet: topCluster.lead.sourceName,
+    pubDate: topCluster.lead.pubDate,
+    leadLink: topCluster.lead.link,
+    relatedHeadlines: topCluster.articles.slice(1, 5).map(a => ({
+      title: a.title,
+      source: a.sourceName,
+      link: a.link
+    }))
+  };
+
+  return {
+    topic: topicKey || 'general',
+    topicLabel: catMeta.label,
+    topicIcon: catMeta.icon,
+    topicColor: catMeta.color,
+    totalArticles: matched.length,
+    trendingStory,
+    articles: matched
+  };
+}
+
+app.get('/api/topic-trending', (req, res) => {
+  const { topic } = req.query;
+  const result = computeTopicTrending(topic, articles);
+  res.json(result);
+});
+
 app.get('/api/political-taxonomy', (req, res) => {
   const stats = {};
   for (const [key, val] of Object.entries(POLITICAL_TAXONOMY)) {
@@ -1774,17 +1986,15 @@ Return ONLY raw JSON. No markdown fences.`;
   });
 });
 
-// Immediately categorize and corroborate cached articles
+// Immediately categorize and corroborate cached articles with upgraded AI classifier
 if (Array.isArray(articles) && articles.length > 0) {
   articles.forEach(a => {
-    if (!a.politicalCategory || !a.matchedKeywords) {
-      const cls = classifyPoliticalArticle(a.title, a.summary);
-      Object.assign(a, cls);
-    }
+    const cls = classifyPoliticalArticle(a.title, a.summary);
+    Object.assign(a, cls);
   });
   calculateMultiSourceCorroboration(articles);
   writeJson(ARTICLES_FILE, articles);
-  console.log(`[STARTUP] Enriched ${articles.length} cached articles with political taxonomy and multi-source corroboration.`);
+  console.log(`[STARTUP] Re-classified ${articles.length} cached articles with AI semantic classifier and multi-source corroboration.`);
 }
 
 // Startup pipeline: Ingest feeds and immediately run live Gemini synthesis!

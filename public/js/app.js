@@ -3,6 +3,7 @@ let allArticles = [];
 let activeFeeds = [];
 let allMonitors = [];
 let currentMonitorId = 'all';
+let currentTopic = 'general';
 let currentAnalysis = null;
 let currentView = 'dashboard';
 let currentFilters = {
@@ -16,6 +17,15 @@ let currentFilters = {
   sort: 'newest'
 };
 
+const TOPIC_METADATA = {
+  general: { label: 'Trending Across Media', icon: '🌐', color: '#6366f1' },
+  politics: { label: 'Politics & Governance', icon: '🏛️', color: '#3b82f6' },
+  elections: { label: 'Elections & Campaigns', icon: '🗳️', color: '#8b5cf6' },
+  parliament: { label: 'Parliament & Legislation', icon: '📜', color: '#10b981' },
+  political_conflict: { label: 'Conflict & Protests', icon: '⚔️', color: '#ef4444' },
+  corruption: { label: 'Corruption & Graft Watch', icon: '🛡️', color: '#f59e0b' }
+};
+
 // Initialize Application
 document.addEventListener('DOMContentLoaded', async () => {
   initClock();
@@ -25,8 +35,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadFeeds();
   await loadArticles();
   await loadLatestAnalysis();
-  await loadMonitors();
-  await selectMonitor('all');
+  await loadTaxonomyCounts();
+  await switchTopic('general');
 
   // Live auto-scrape countdown ticker every 60s
   setInterval(loadStatus, 60000);
@@ -34,8 +44,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Background refresh every 5 minutes to pull freshly scraped hourly stories
   setInterval(async () => {
     await loadArticles();
-    await loadLatestAnalysis();
-    await selectMonitor(currentMonitorId);
+    await loadTaxonomyCounts();
+    await switchTopic(currentTopic);
   }, 5 * 60 * 1000);
 });
 
@@ -117,33 +127,11 @@ function initEventListeners() {
     });
   }
 
-  // Political Categories Taxonomy Filtering
-  document.querySelectorAll('#political-category-pills .pol-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('#political-category-pills .pol-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      currentFilters.politicalCategory = pill.dataset.category || 'All';
-      renderArticles();
-    });
-  });
-
-  // Cross-Source Corroboration Tier Filtering
-  document.querySelectorAll('#corroboration-tier-pills .corrob-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('#corroboration-tier-pills .corrob-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      currentFilters.sourceTier = pill.dataset.tier || 'All';
-      renderArticles();
-    });
-  });
-
-  // Source Pills Filtering on Recent Mentions
-  document.querySelectorAll('#source-filter-pills .source-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('#source-filter-pills .source-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      currentFilters.source = pill.dataset.source || 'All';
-      renderArticles();
+  // MAIN TOPICS NAVIGATION TABS: Clear, separated topic selection
+  document.querySelectorAll('#topic-navigation-bar .topic-nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const topic = tab.dataset.topic || 'general';
+      switchTopic(topic);
     });
   });
 
@@ -232,7 +220,7 @@ async function loadFeeds() {
 // Load Ingested Articles
 async function loadArticles() {
   try {
-    const res = await fetch('/api/articles?limit=150');
+    const res = await fetch('/api/articles?limit=250');
     allArticles = await res.json();
     renderArticles();
   } catch (err) {
@@ -241,113 +229,220 @@ async function loadArticles() {
   }
 }
 
-// Render Recent Mentions List
+// Get Brand Color for Verified Kenyan Media Outlets
+function getOutletColor(outletName) {
+  const name = (outletName || '').toLowerCase();
+  if (name.includes('nation')) return '#0284c7';
+  if (name.includes('standard')) return '#dc2626';
+  if (name.includes('citizen')) return '#f97316';
+  if (name.includes('the star') || name.includes('star')) return '#e11d48';
+  if (name.includes('people daily') || name.includes('people')) return '#8b5cf6';
+  if (name.includes('capital')) return '#ea580c';
+  if (name.includes('kbc')) return '#16a34a';
+  if (name.includes('kenyans')) return '#2563eb';
+  return '#3b82f6';
+}
+
+// Load Real Article Counts across the Main Topics
+async function loadTaxonomyCounts() {
+  try {
+    const res = await fetch('/api/political-taxonomy');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.taxonomy) {
+        for (const [key, val] of Object.entries(data.taxonomy)) {
+          const badge = document.getElementById(`tab-count-${key}`);
+          if (badge) badge.innerText = val.articleCount || 0;
+        }
+        const genBadge = document.getElementById('tab-count-general');
+        if (genBadge) genBadge.innerText = allArticles.length || 0;
+      }
+    }
+  } catch (err) {
+    console.warn('Error loading taxonomy counts:', err);
+  }
+}
+
+// Switch Active Main Topic (Clear, Distinct Topic Surveillance)
+async function switchTopic(topicKey) {
+  currentTopic = topicKey;
+
+  // 1. Update active tab UI
+  document.querySelectorAll('#topic-navigation-bar .topic-nav-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.topic === topicKey);
+  });
+
+  // 2. Fetch Topic Trending Spotlight from server
+  try {
+    const res = await fetch(`/api/topic-trending?topic=${topicKey}`);
+    if (res.ok) {
+      const data = await res.json();
+      renderTopicSpotlight(data);
+      updateTopicKPIs(data);
+    }
+  } catch (err) {
+    console.error('Error fetching topic trending:', err);
+  }
+
+  // 3. Update stream header
+  const titleEl = document.getElementById('topic-stream-title');
+  const iconEl = document.getElementById('topic-stream-icon');
+  const topicMeta = TOPIC_METADATA[topicKey] || { label: 'Trending News', icon: '🌐' };
+
+  if (titleEl) titleEl.innerText = `${topicMeta.label} Stream`;
+  if (iconEl) iconEl.innerText = topicMeta.icon;
+
+  // 4. Update filter & render stream
+  renderArticles();
+}
+
+// Render Spotlight: What is trending under this topic and from how many media outlets
+function renderTopicSpotlight(data) {
+  const topicBadge = document.getElementById('spotlight-topic-badge');
+  const corrobPill = document.getElementById('spotlight-outlets-pill');
+  const headlineEl = document.getElementById('spotlight-headline');
+  const narrativeEl = document.getElementById('spotlight-narrative');
+  const outletsList = document.getElementById('spotlight-outlets-list');
+  const leadSourceEl = document.getElementById('spotlight-lead-source');
+  const timeEl = document.getElementById('spotlight-time');
+  const readBtn = document.getElementById('spotlight-read-action');
+
+  const meta = TOPIC_METADATA[data?.topic] || { label: data?.topicLabel || 'TOPIC', icon: '🔥' };
+
+  if (!data || !data.trendingStory) {
+    if (topicBadge) topicBadge.innerText = `🔥 ${meta.label.toUpperCase()} SPOTLIGHT`;
+    if (corrobPill) corrobPill.innerText = `Awaiting Coverage`;
+    if (headlineEl) headlineEl.innerText = `No trending narrative cluster detected yet for this topic.`;
+    if (narrativeEl) narrativeEl.innerText = `Automated RSS surveillance is monitoring Kenya's newsrooms. Breaking stories under this topic will appear here automatically.`;
+    if (outletsList) outletsList.innerHTML = `<span style="font-size:0.75rem; color:#64748b;">Monitoring feeds...</span>`;
+    if (readBtn) readBtn.style.display = 'none';
+    return;
+  }
+
+  const story = data.trendingStory;
+  if (topicBadge) topicBadge.innerText = `🔥 TRENDING UNDER ${meta.label.toUpperCase()}`;
+  if (corrobPill) corrobPill.innerText = story.corroborationBadge;
+  if (headlineEl) headlineEl.innerText = story.title;
+  if (narrativeEl) narrativeEl.innerText = story.summary;
+
+  if (outletsList && Array.isArray(story.outlets)) {
+    outletsList.innerHTML = story.outlets.map(outlet => {
+      const color = getOutletColor(outlet);
+      return `
+        <span class="spotlight-outlet-chip" style="border-left: 3px solid ${color};">
+          📰 ${escapeHtml(outlet)}
+        </span>
+      `;
+    }).join('');
+  }
+
+  if (leadSourceEl) leadSourceEl.innerText = `Lead: ${story.leadOutlet || 'Kenyan Press'}`;
+  if (timeEl) timeEl.innerText = story.pubDate ? formatRelativeTime(story.pubDate) : 'Live';
+  if (readBtn) {
+    if (story.leadLink) {
+      readBtn.href = story.leadLink;
+      readBtn.style.display = 'inline-flex';
+    } else {
+      readBtn.style.display = 'none';
+    }
+  }
+}
+
+// Update Top KPI Cards for Selected Topic
+function updateTopicKPIs(data) {
+  const mentionsVal = document.getElementById('kpi-total-mentions-val');
+  const multiVal = document.getElementById('kpi-multi-source-val');
+  const sourcesVal = document.getElementById('kpi-sources-val');
+  const topicIcon = document.getElementById('kpi-topic-icon');
+  const topicLabel = document.getElementById('kpi-topic-label');
+
+  const meta = TOPIC_METADATA[data?.topic] || { label: 'Topic Mentions', icon: '🌐' };
+
+  if (topicIcon) topicIcon.innerText = meta.icon;
+  if (topicLabel) topicLabel.innerText = `${meta.label} Mentions`;
+  if (mentionsVal) mentionsVal.innerText = (data?.totalArticles || 0).toLocaleString();
+
+  if (multiVal) {
+    const list = data?.articles || [];
+    const multiCount = list.filter(a => (a.sourceCount || 1) >= 3).length;
+    multiVal.innerText = multiCount.toLocaleString();
+  }
+
+  if (sourcesVal) {
+    const list = data?.articles || [];
+    const uniqueOutlets = new Set(list.map(a => a.sourceName));
+    sourcesVal.innerText = uniqueOutlets.size || (activeFeeds.length || 8);
+  }
+}
+
+// Render News Stream Strictly Under Selected Topic
 function renderArticles() {
   const streamList = document.getElementById('stream-list');
   const countBadge = document.getElementById('filtered-count-badge');
   if (!streamList) return;
 
   let filtered = allArticles.filter(art => {
-    // 1. Source filter
-    if (currentFilters.source !== 'All') {
-      const srcQuery = currentFilters.source.toLowerCase();
-      const matchId = (art.sourceId || '').toLowerCase() === srcQuery;
-      const matchName = (art.sourceName || '').toLowerCase().includes(srcQuery);
-      if (!matchId && !matchName) return false;
-    }
-
-    // 2. Political Category filter
-    if (currentFilters.politicalCategory !== 'All') {
-      if (art.politicalCategory !== currentFilters.politicalCategory && art.topic !== currentFilters.politicalCategory) {
+    // 1. Topic Separation Filter
+    if (currentTopic && currentTopic !== 'general') {
+      if (art.politicalCategory !== currentTopic && art.topic !== currentTopic) {
         return false;
       }
     }
 
-    // 3. Corroboration Tier filter
-    if (currentFilters.sourceTier !== 'All') {
-      const artTier = art.corroborationTier || ((art.sourceCount || 1) >= 3 ? 'MULTI_SOURCE' : (art.sourceCount === 2 ? 'DUAL_SOURCE' : 'SINGLE_SOURCE'));
-      if (artTier !== currentFilters.sourceTier) {
-        return false;
-      }
-    }
-
-    // 4. Legacy Topic filter
-    if (currentFilters.topic !== 'All' && art.topic !== currentFilters.topic) {
-      return false;
-    }
-
-    // 5. Risk filter
-    const effectiveRisk = art.aiRiskLevel || art.initialRisk || 'LOW';
-    if (currentFilters.risk !== 'All' && effectiveRisk !== currentFilters.risk) {
-      return false;
-    }
-
-    // 6. Sentiment filter
-    if (currentFilters.sentiment !== 'All') {
-      const text = `${art.title} ${art.summary}`.toLowerCase();
-      if (currentFilters.sentiment === 'neg' && !text.match(/loss|shortage|delay|debt|deficit|flaw|trouble|protest|strike|corruption|graft|bribery|dispute|clash/)) return false;
-      if (currentFilters.sentiment === 'pos' && !text.match(/boost|launch|reform|growth|deal|peace|agreement|recovery|resolved|commends/)) return false;
-    }
-
-    // 7. Search query
+    // 2. Search query filter
     if (currentFilters.search) {
       const q = currentFilters.search.toLowerCase();
       const matchTitle = (art.title || '').toLowerCase().includes(q);
       const matchSummary = (art.summary || '').toLowerCase().includes(q);
       const matchKeywords = Array.isArray(art.matchedKeywords) && art.matchedKeywords.some(k => k.toLowerCase().includes(q));
-      if (!matchTitle && !matchSummary && !matchKeywords) return false;
+      const matchSource = (art.sourceName || '').toLowerCase().includes(q);
+      if (!matchTitle && !matchSummary && !matchKeywords && !matchSource) return false;
     }
 
     return true;
   });
 
-  // Sort by newest
+  // Sort by newest publication date
   filtered.sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
 
   if (countBadge) {
-    countBadge.innerText = `${filtered.length} items`;
+    countBadge.innerText = `${filtered.length} verified stories`;
   }
+
+  const topicMeta = TOPIC_METADATA[currentTopic] || { label: 'This Topic', icon: '🌐' };
 
   if (filtered.length === 0) {
     streamList.innerHTML = `
-      <div style="text-align: center; padding: 40px 20px; color: #64748b;">
-        <span style="font-size: 2rem; display: block; margin-bottom: 8px;">🔍</span>
-        <p style="font-weight: 500; color: #94a3b8;">No matching political news found for this filter selection.</p>
-        <p style="font-size: 0.74rem; margin-top: 4px;">Try selecting "All Politics" or clearing search criteria.</p>
+      <div style="text-align: center; padding: 48px 20px; color: #64748b;">
+        <span style="font-size: 2.2rem; display: block; margin-bottom: 8px;">${topicMeta.icon}</span>
+        <p style="font-weight: 600; color: #94a3b8; font-size: 0.95rem;">No verified news found under ${escapeHtml(topicMeta.label)}.</p>
+        <p style="font-size: 0.78rem; margin-top: 6px;">AI semantic classification ensures only genuine ${escapeHtml(topicMeta.label)} news is cataloged here.</p>
       </div>
     `;
     return;
   }
 
-  streamList.innerHTML = filtered.slice(0, 15).map(art => {
+  streamList.innerHTML = filtered.slice(0, 30).map(art => {
     const timeFormatted = formatRelativeTime(art.pubDate);
     const risk = art.aiRiskLevel || art.initialRisk || 'LOW';
     const sentClass = risk === 'HIGH' ? 'negative' : risk === 'MEDIUM' ? 'neutral' : 'positive';
-    const sentLabel = risk === 'HIGH' ? 'Negative' : risk === 'MEDIUM' ? 'Neutral' : 'Positive';
+    const sentLabel = risk === 'HIGH' ? 'High Tension' : risk === 'MEDIUM' ? 'Watch' : 'Stable';
 
     const sourceInitial = (art.sourceName || 'K')[0].toUpperCase();
-    const avatarBg = art.sourceColor || 
-      (art.sourceName.includes('Nation') ? '#0284c7' : 
-       art.sourceName.includes('Standard') ? '#dc2626' : 
-       art.sourceName.includes('Citizen') ? '#f97316' : 
-       art.sourceName.includes('Star') ? '#e11d48' : 
-       art.sourceName.includes('People') ? '#8b5cf6' : 
-       art.sourceName.includes('Capital') ? '#ea580c' : 
-       art.sourceName.includes('KBC') ? '#16a34a' : 
-       art.sourceName.includes('Kenyans') ? '#2563eb' : 
-       art.sourceName.includes('X') ? '#0ea5e9' : 
-       art.sourceName.includes('Reddit') ? '#ff4500' : '#4f46e5');
+    const avatarBg = getOutletColor(art.sourceName);
 
     // Corroboration Badge
     const count = art.sourceCount || 1;
     const corrobClass = (count >= 3 || art.corroborationTier === 'MULTI_SOURCE') ? 'multi' : ((count === 2 || art.corroborationTier === 'DUAL_SOURCE') ? 'dual' : 'single');
-    const corrobBadgeText = (count >= 3 || art.corroborationTier === 'MULTI_SOURCE') ? `🌟 ${count} Outlets Verified` : ((count === 2 || art.corroborationTier === 'DUAL_SOURCE') ? `⚡ 2 Outlets Corroborated` : `Single Outlet`);
+    const corrobBadgeText = (count >= 3 || art.corroborationTier === 'MULTI_SOURCE') 
+      ? `🌟 ${count} Outlets Verified` 
+      : ((count === 2 || art.corroborationTier === 'DUAL_SOURCE') ? `⚡ 2 Outlets Corroborated` : `Single Outlet`);
     const corrobList = (art.corroboratingSources && art.corroboratingSources.length > 0) ? art.corroboratingSources.join(', ') : art.sourceName;
 
     // Political Taxonomy Category
-    const catLabel = art.politicalCategoryLabel || art.topic || 'Politics';
-    const catIcon = art.politicalCategoryIcon || '🏛️';
-    const catColor = art.politicalCategoryColor || '#3b82f6';
+    const catLabel = art.politicalCategoryLabel || art.topic || 'General News';
+    const catIcon = art.politicalCategoryIcon || '🌐';
+    const catColor = art.politicalCategoryColor || '#6366f1';
 
     return `
       <div class="mention-item" onclick="openArticleModal('${art.id}')" title="Click to view cross-source corroboration and intelligence matrix">
@@ -356,12 +451,12 @@ function renderArticles() {
         </div>
         <div class="mention-main-col">
           <div class="mention-meta-line">
-            <strong>${escapeHtml(art.sourceName)}</strong> • ${timeFormatted}
+            <strong style="color: #ffffff;">${escapeHtml(art.sourceName)}</strong> • ${timeFormatted}
             <span class="corroboration-badge ${corrobClass}" title="Reported by: ${escapeHtml(corrobList)}">${corrobBadgeText}</span>
           </div>
           <div class="mention-title">${escapeHtml(art.title)}</div>
           <div class="mention-excerpt">${escapeHtml(art.summary || '')}</div>
-          ${art.matchedKeywords && art.matchedKeywords.length > 0 ? `
+          ${art.matchedKeywords && art.matchedKeywords.length > 0 && !art.isSports ? `
             <div class="kw-chips-container">
               ${art.matchedKeywords.slice(0, 4).map(kw => `<span class="kw-chip">#${escapeHtml(kw)}</span>`).join('')}
             </div>
@@ -397,6 +492,8 @@ async function triggerScan() {
     if (data.success) {
       showToast(`Scan complete: ${data.addedCount} new articles ingested! Total: ${data.totalArticles}`, 'success');
       await loadArticles();
+      await loadTaxonomyCounts();
+      await switchTopic(currentTopic);
       await loadStatus();
       if (data.report) {
         currentAnalysis = data.report;
@@ -439,7 +536,8 @@ async function triggerAnalysis() {
       renderAnalysis(data.report);
       showToast('AI Synthesis completed!', 'success');
       await loadArticles();
-      await selectMonitor(currentMonitorId);
+      await loadTaxonomyCounts();
+      await switchTopic(currentTopic);
     } else {
       showToast(data.error || 'Analysis failed.', 'error');
     }

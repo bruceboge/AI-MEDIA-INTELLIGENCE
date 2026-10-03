@@ -136,48 +136,88 @@
         <!-- View Header -->
         <div class="view-header">
           <div>
-            <h1 class="view-title">Overview</h1>
-            <p class="view-subtitle">Real-time media monitoring and intelligence for Kenya</p>
-          </div>
-
-          <!-- Sector Selector in Dashboard -->
-          <div class="dashboard-sector-selector" id="dashboard-sector-selector">
-            <div class="monitors-pills" id="monitors-pills-list">
-              <!-- Rendered by JS -->
-            </div>
-            <button class="btn-create-monitor-pill" id="btn-open-create-monitor" title="Create Custom Sector Monitor">
-              <span>➕</span> New Monitor
-            </button>
+            <h1 class="view-title">Media Intelligence & Topics Radar</h1>
+            <p class="view-subtitle">Real-time surveillance & AI narrative consensus across Kenya's newsrooms</p>
           </div>
         </div>
 
-        <!-- Trend Spike Anomaly Alert Banner (Feature 4) -->
-        <div class="trend-spike-banner" id="trend-spike-banner" style="display: none;">
-          <div class="spike-banner-inner">
-            <div class="spike-badge">🚨 UNUSUAL SPIKE DETECTED</div>
-            <div class="spike-content">
-              <strong id="spike-headline">Sector Mentions Surging</strong>: 
-              <span id="spike-details">Baseline 14/day → Current 48/day (+242% velocity surge).</span>
+        <!-- MAIN TOPICS NAVIGATION: Clear, distinct, separated topic areas -->
+        <div class="topic-navigation-bar" id="topic-navigation-bar">
+          <button class="topic-nav-tab active" data-topic="general" id="tab-general">
+            <span class="tab-icon">🌐</span>
+            <span class="tab-text">Trending Across Media</span>
+            <span class="tab-count" id="tab-count-general">0</span>
+          </button>
+          <button class="topic-nav-tab" data-topic="politics" id="tab-politics">
+            <span class="tab-icon">🏛️</span>
+            <span class="tab-text">Politics & Governance</span>
+            <span class="tab-count" id="tab-count-politics">0</span>
+          </button>
+          <button class="topic-nav-tab" data-topic="elections" id="tab-elections">
+            <span class="tab-icon">🗳️</span>
+            <span class="tab-text">Elections & Campaigns</span>
+            <span class="tab-count" id="tab-count-elections">0</span>
+          </button>
+          <button class="topic-nav-tab" data-topic="parliament" id="tab-parliament">
+            <span class="tab-icon">📜</span>
+            <span class="tab-text">Parliament & Legislation</span>
+            <span class="tab-count" id="tab-count-parliament">0</span>
+          </button>
+          <button class="topic-nav-tab" data-topic="political_conflict" id="tab-political_conflict">
+            <span class="tab-icon">⚔️</span>
+            <span class="tab-text">Conflict & Protests</span>
+            <span class="tab-count" id="tab-count-political_conflict">0</span>
+          </button>
+          <button class="topic-nav-tab" data-topic="corruption" id="tab-corruption">
+            <span class="tab-icon">🛡️</span>
+            <span class="tab-text">Corruption & Graft Watch</span>
+            <span class="tab-count" id="tab-count-corruption">0</span>
+          </button>
+        </div>
+
+        <!-- TOPIC TRENDING SPOTLIGHT: What is trending under this topic and from how many media outlets -->
+        <div class="topic-trending-spotlight" id="topic-trending-spotlight">
+          <div class="spotlight-top">
+            <div class="spotlight-badge-row">
+              <span class="spotlight-badge" id="spotlight-topic-badge">🔥 WHAT'S TRENDING UNDER THIS TOPIC</span>
+              <span class="spotlight-corrob-pill" id="spotlight-outlets-pill">🌟 Reported by 4 Media Outlets</span>
             </div>
-            <div class="spike-actions">
-              <span class="spike-ratio-tag" id="spike-ratio-tag">3.4x Baseline</span>
+            <h2 class="spotlight-headline" id="spotlight-headline">Loading trending development across newsrooms...</h2>
+          </div>
+          <div class="spotlight-middle">
+            <p class="spotlight-narrative" id="spotlight-narrative">AI Intelligence analyzing cross-outlet consensus and developing story arcs...</p>
+            <div class="spotlight-outlets-section">
+              <span class="spotlight-outlets-label">Covering Media Outlets:</span>
+              <div class="spotlight-outlets-list" id="spotlight-outlets-list">
+                <!-- Media outlet chips generated dynamically by JS -->
+              </div>
             </div>
+          </div>
+          <div class="spotlight-bottom">
+            <div class="spotlight-meta-info">
+              <span id="spotlight-lead-source">Lead: Daily Nation</span>
+              <span class="meta-separator">•</span>
+              <span id="spotlight-time">Recent</span>
+            </div>
+            <a href="#" target="_blank" class="spotlight-read-action" id="spotlight-read-action">
+              <span>Read Original Story</span> ↗
+            </a>
           </div>
         </div>
 
         <!-- Top 4 KPI Cards with Sparklines -->
         <div class="kpi-grid">
-          <!-- Card 1: Total Political Mentions -->
+          <!-- Card 1: Total Mentions Under Topic -->
           <div class="kpi-card" id="kpi-mentions-card">
             <div class="kpi-card-header">
-              <span class="kpi-icon-pill blue">🏛️</span>
-              <span class="kpi-label">Political Mentions</span>
+              <span class="kpi-icon-pill blue" id="kpi-topic-icon">🌐</span>
+              <span class="kpi-label" id="kpi-topic-label">Topic Mentions</span>
             </div>
             <div class="kpi-card-body">
               <div class="kpi-data-col">
-                <div class="kpi-value" id="kpi-total-mentions-val">2,481</div>
+                <div class="kpi-value" id="kpi-total-mentions-val">0</div>
                 <div class="kpi-delta positive" id="kpi-mentions-delta">
-                  <span>↑ 184%</span> <span class="delta-sub">across Kenyan media</span>
+                  <span>Live Stream</span> <span class="delta-sub">verified Kenyan articles</span>
                 </div>
               </div>
               <div class="kpi-sparkline" id="sparkline-mentions">
@@ -203,7 +243,7 @@
             </div>
             <div class="kpi-card-body">
               <div class="kpi-data-col">
-                <div class="kpi-value" id="kpi-multi-source-val">45</div>
+                <div class="kpi-value" id="kpi-multi-source-val">0</div>
                 <div class="kpi-delta positive" id="kpi-multi-source-delta">
                   <span>3+ Outlets</span> <span class="delta-sub">cross-corroborated</span>
                 </div>
@@ -223,17 +263,17 @@
             </div>
           </div>
 
-          <!-- Card 3: Monitored Channels & Outlets -->
+          <!-- Card 3: Monitored Newsrooms -->
           <div class="kpi-card" id="kpi-sources-card">
             <div class="kpi-card-header">
               <span class="kpi-icon-pill blue">📰</span>
-              <span class="kpi-label">Media & Social Outlets</span>
+              <span class="kpi-label">Active Media Desks</span>
             </div>
             <div class="kpi-card-body">
               <div class="kpi-data-col">
-                <div class="kpi-value" id="kpi-sources-val">14</div>
+                <div class="kpi-value" id="kpi-sources-val">8</div>
                 <div class="kpi-delta positive" id="kpi-sources-delta">
-                  <span>Press + X + Reddit</span> <span class="delta-sub">active surveillance</span>
+                  <span>Mainstream Press & Radio</span> <span class="delta-sub">verified Kenyan desks</span>
                 </div>
               </div>
               <div class="kpi-sparkline" id="sparkline-sources">
@@ -342,72 +382,21 @@
         <!-- Lower Section: 2 Columns (Recent Mentions Stream on Left, Alerts & Trending Topics on Right) -->
         <div class="lower-grid">
 
-          <!-- Left Column: Recent Mentions Stream -->
+          <!-- Left Column: Topic News Stream -->
           <div class="card recent-mentions-card">
-            <div class="card-header" style="flex-direction: column; align-items: stretch; gap: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <div class="header-left-title">
-                  <h3 class="card-title">🇰🇪 Political Media Stream</h3>
-                  <span class="items-badge" id="filtered-count-badge">0 items</span>
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <button class="link-btn" onclick="triggerScan()" title="Ingest latest wire stories">🔄 Sync Feeds</button>
-                  <button class="link-btn" onclick="switchView('narratives')">View all →</button>
-                </div>
+            <div class="card-header" style="justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+              <div class="header-left-title">
+                <span class="topic-active-indicator-icon" id="topic-stream-icon" style="font-size: 1.15rem;">🌐</span>
+                <h3 class="card-title" id="topic-stream-title">Trending Across Media News Stream</h3>
+                <span class="items-badge" id="filtered-count-badge">0 verified stories</span>
               </div>
-
-              <!-- Political Areas Taxonomy Filter Bar (User's Exact 5 Areas) -->
-              <div class="political-filter-bar" id="political-category-pills">
-                <button class="pol-pill active" data-category="All">
-                  <span>🏛️</span> All Politics
-                </button>
-                <button class="pol-pill" data-category="politics">
-                  <span>🏛️</span> Governance & Executive
-                </button>
-                <button class="pol-pill" data-category="elections">
-                  <span>🗳️</span> Elections & Campaigns
-                </button>
-                <button class="pol-pill" data-category="parliament">
-                  <span>📜</span> Parliament & Senate
-                </button>
-                <button class="pol-pill" data-category="political_conflict">
-                  <span>⚔️</span> Conflict & Protests
-                </button>
-                <button class="pol-pill" data-category="corruption">
-                  <span>🛡️</span> Corruption & Graft
-                </button>
-              </div>
-
-              <!-- Multi-Source Corroboration & Verification Tier Bar -->
-              <div class="corroboration-subbar">
-                <div class="corrob-bar-left">
-                  <span class="corrob-badge-label">⚡ Cross-Source Corroboration:</span>
-                  <div class="corrob-pills-row" id="corroboration-tier-pills">
-                    <button class="corrob-pill active" data-tier="All">All Stories</button>
-                    <button class="corrob-pill tier-multi" data-tier="MULTI_SOURCE" title="Stories corroborated by 3 or more independent newsrooms">🌟 Multi-Source (3+)</button>
-                    <button class="corrob-pill tier-dual" data-tier="DUAL_SOURCE" title="Stories cross-confirmed across 2 media outlets">⚡ Dual-Source (2)</button>
-                    <button class="corrob-pill tier-single" data-tier="SINGLE_SOURCE" title="Single outlet breaking coverage">ℹ️ Single Outlet</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Media Outlets & Social Channels Row -->
-              <div class="source-pills-row" id="source-filter-pills">
-                <button class="source-pill active" data-source="All">All Outlets</button>
-                <button class="source-pill" data-source="Daily Nation">Nation</button>
-                <button class="source-pill" data-source="The Standard">Standard</button>
-                <button class="source-pill" data-source="Citizen Digital">Citizen</button>
-                <button class="source-pill" data-source="The Star">The Star</button>
-                <button class="source-pill" data-source="People Daily">People Daily</button>
-                <button class="source-pill" data-source="Capital FM">Capital FM</button>
-                <button class="source-pill" data-source="KBC">KBC</button>
-                <button class="source-pill" data-source="Kenyans">Kenyans.co.ke</button>
-                <button class="source-pill" data-source="X (Twitter">X / Twitter</button>
-                <button class="source-pill" data-source="Reddit">Reddit r/Kenya</button>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="link-btn" onclick="triggerScan()" title="Ingest latest wire stories">🔄 Sync Feeds</button>
+                <button class="link-btn" onclick="switchView('narratives')">Narratives →</button>
               </div>
             </div>
 
-            <!-- Ingestion Stream Items List -->
+            <!-- Ingestion Stream Items List strictly under selected topic -->
             <div class="mentions-table-wrap" id="stream-list">
               <!-- Populated by JS -->
             </div>
