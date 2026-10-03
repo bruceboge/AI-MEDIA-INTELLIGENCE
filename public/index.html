@@ -3,475 +3,602 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kenya Media Radar | AI Early-Warning Intelligence System</title>
-  <meta name="description" content="State-of-the-art real-time media intelligence and AI early-warning system monitoring Kenyan national press (Nation Africa, The Standard, Capital FM, KBC) for emerging political tension, elections, and public unrest.">
+  <title>MediWatch Kenya | Media Intelligence & Conflict Early-Warning System</title>
+  <meta name="description" content="Real-time media monitoring, early-warning intelligence, and automated public issues surveillance for Kenya.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body class="dark-theme">
-  <!-- Top Background Ambient Glow Lights -->
-  <div class="ambient-glow ambient-glow-1"></div>
-  <div class="ambient-glow ambient-glow-2"></div>
-  <div class="ambient-glow ambient-glow-3"></div>
+<body class="app-layout">
 
-  <!-- Header Navigation -->
-  <header class="app-header">
-    <div class="header-left">
-      <div class="radar-badge">
-        <span class="radar-pulse"></span>
-        <span class="radar-icon">📡</span>
+  <!-- LEFT SIDEBAR NAVIGATION -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-logo">
+        <svg class="logo-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="28" height="28" rx="8" fill="#2563EB"/>
+          <path d="M7 14C7 10.134 10.134 7 14 7C17.866 7 21 10.134 21 14C21 17.866 17.866 21 14 21" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="3" fill="#60A5FA"/>
+          <path d="M14 11V7M17 14H21M14 17V21M11 14H7" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-name">MediWatch</span>
       </div>
-      <div>
-        <div class="brand-title-wrap">
-          <h1 class="brand-title">KENYA MEDIA RADAR</h1>
-          <span class="badge badge-accent">AI INTELLIGENCE</span>
-          <span class="badge badge-pulse" id="system-status-badge">LIVE MONITORING</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="dashboard" id="nav-dashboard">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Dashboard</span>
+      </button>
+
+      <button class="nav-item" data-view="monitors" id="nav-monitors">
+        <span class="nav-icon">🎯</span>
+        <span class="nav-label">Monitors</span>
+      </button>
+
+      <button class="nav-item" data-view="narratives" id="nav-narratives">
+        <span class="nav-icon">🧭</span>
+        <span class="nav-label">Narratives</span>
+      </button>
+
+      <button class="nav-item" data-view="claims" id="nav-claims">
+        <span class="nav-icon">⚖️</span>
+        <span class="nav-label">Claims</span>
+      </button>
+
+      <button class="nav-item" data-view="alerts" id="nav-alerts">
+        <span class="nav-icon">🔔</span>
+        <span class="nav-label">Alerts</span>
+        <span class="nav-badge" id="nav-alerts-badge">3</span>
+      </button>
+
+      <button class="nav-item" data-view="sources" id="nav-sources">
+        <span class="nav-icon">📰</span>
+        <span class="nav-label">Sources</span>
+      </button>
+
+      <button class="nav-item" data-view="reports" id="nav-reports">
+        <span class="nav-icon">📄</span>
+        <span class="nav-label">Reports</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="nav-item" id="btn-open-feeds">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings / Feeds</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN VIEWPORT -->
+  <div class="main-wrapper">
+
+    <!-- TOP HEADER BAR -->
+    <header class="topbar">
+      <!-- Search Input -->
+      <div class="topbar-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="stream-search" placeholder="Search topics, keywords, or entities..." />
+        <button class="clear-search-btn" id="btn-clear-search" style="display:none;">✕</button>
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Live System Clock & Auto-Scrape Interval Indicator -->
+        <div class="timeframe-pill" title="Automated 1-hour background media ingestion active">
+          <span class="timeframe-icon">🕒</span>
+          <span id="eat-time">--:--:-- EAT</span>
+          <span class="divider">|</span>
+          <span id="auto-sync-status">Auto-Scrape: 1h</span>
+          <span class="divider">|</span>
+          <span id="last-sync-label">Next: in 59m</span>
         </div>
-        <p class="brand-subtitle">Conflict Early-Warning & Media Surveillance • Nairobi, Kenya</p>
-      </div>
-    </div>
 
-    <div class="header-center">
-      <div class="time-clock" id="live-clock">
-        <span class="clock-icon">🕒</span>
-        <span id="eat-time">--:--:-- EAT</span>
-        <span class="clock-divider">|</span>
-        <span id="last-sync-label">Sync: Live</span>
-      </div>
-    </div>
+        <!-- 24h Timeframe Filter -->
+        <div class="timeframe-pill" id="timeframe-selector">
+          <span class="timeframe-icon">📅</span>
+          <span>Last 24 hours</span>
+          <span class="chevron">⌄</span>
+        </div>
 
-    <div class="header-right">
-      <!-- AI Engine Status Indicator (No API key on frontend) -->
-      <div class="ai-engine-pill" id="ai-engine-status" title="Google Gemini 2.5 Flash Neural Engine Online">
-        <span class="ai-engine-pulse"></span>
-        <span class="ai-engine-icon">🧠</span>
-        <span class="ai-engine-label" id="ai-model-label">Gemini 2.5 Flash</span>
-        <span class="ai-engine-status-tag">ACTIVE</span>
-      </div>
-
-      <!-- Feeds Manager Button -->
-      <button class="btn btn-secondary" id="btn-open-feeds" title="Manage Kenya Media RSS Feeds">
-        <span>🌐 Feeds</span>
-        <span class="pill-counter" id="active-feeds-pill">5</span>
-      </button>
-
-      <!-- Scan Live Feeds Button -->
-      <button class="btn btn-scan" id="btn-scan-feeds" title="Scan Nation Africa, The Standard, Capital FM, and KBC RSS Feeds">
-        <span class="btn-icon">⚡</span>
-        <span class="btn-text">Scan Live Feeds</span>
-      </button>
-
-      <!-- Run AI Analysis Button -->
-      <button class="btn btn-primary" id="btn-run-analysis" title="Execute Gemini LLM Early-Warning Synthesis">
-        <span class="btn-icon">✨</span>
-        <span class="btn-text">Run AI Analysis</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- Live Breaking Ticker Banner -->
-  <div class="ticker-banner">
-    <div class="ticker-label">
-      <span class="live-dot"></span> LIVE RADAR STREAM:
-    </div>
-    <div class="ticker-marquee-wrap">
-      <div class="ticker-marquee" id="ticker-content">
-        Scanning Nation Africa, The Standard, Capital FM, KBC News, and national political aggregators...
-      </div>
-    </div>
-    <div class="ticker-pause-hint" title="Hover ticker to pause stream">⏸️ Hover to Pause</div>
-  </div>
-
-  <!-- Interactive Topic Radar Search Bar -->
-  <section class="topic-radar-bar">
-    <div class="topic-radar-inner">
-      <div class="topic-radar-input-wrap">
-        <span class="topic-radar-icon">🎯</span>
-        <input type="text" id="topic-radar-input" placeholder="Type any topic to analyze Kenyan media (e.g. healthcare, corruption, land disputes, education, Gen Z, taxes)..." />
-        <button class="btn btn-scan topic-radar-btn" id="btn-topic-scan">
-          <span>🔍</span> Scan Topic
+        <!-- Scan & Analysis Quick Triggers -->
+        <button class="action-btn" id="btn-scan-feeds" title="Scan Nation Africa, The Standard, Capital FM, and KBC RSS Feeds">
+          <span>⚡</span> Scan Feeds
         </button>
-      </div>
-      <div class="active-topics-row" id="active-topics-row">
-        <span class="active-topics-label">Quick Scan:</span>
-        <span class="topic-tag active-tag" data-topic="politics">🗳️ Politics</span>
-        <span class="topic-tag active-tag" data-topic="elections">🇰🇪 Elections</span>
-        <span class="topic-tag" data-topic="healthcare">🏥 Healthcare</span>
-        <span class="topic-tag" data-topic="corruption">⚖️ Corruption</span>
-        <span class="topic-tag" data-topic="economy">📈 Economy</span>
-        <span class="topic-tag" data-topic="Gen Z">🔥 Gen Z</span>
-        <span class="topic-tag" data-topic="taxation">💰 Taxation</span>
-        <span class="topic-tag" data-topic="land disputes">🗺️ Land Disputes</span>
-      </div>
-    </div>
-  </section>
 
-  <!-- Sector & Entity Monitor Selector Bar (Feature 2) -->
-  <section class="monitors-bar">
-    <div class="monitors-bar-inner">
-      <div class="monitors-label">
-        <span class="pulse-ring"></span>
-        <span class="label-text">SECTOR MONITORS:</span>
-      </div>
-      <div class="monitors-pills" id="monitors-pills-list">
-        <!-- Rendered by JS -->
-      </div>
-      <button class="btn btn-outline btn-create-monitor" id="btn-open-create-monitor" title="Create a custom sector or entity tracker">
-        <span>➕</span> New Monitor
-      </button>
-    </div>
-  </section>
+        <button class="action-btn primary" id="btn-run-analysis" title="Execute Early-Warning Synthesis">
+          <span>✨</span> Run AI
+        </button>
 
-  <!-- Trend Spike Anomaly Alert Banner (Feature 4) -->
-  <div class="trend-spike-banner" id="trend-spike-banner" style="display: none;">
-    <div class="spike-banner-inner">
-      <div class="spike-badge">🚨 UNUSUAL SPIKE DETECTED</div>
-      <div class="spike-content">
-        <strong id="spike-headline">Sector Mentions Surging</strong>: 
-        <span id="spike-details">Baseline 14/day → Current 48/day (+242% velocity surge).</span>
-      </div>
-      <div class="spike-actions">
-        <span class="spike-ratio-tag" id="spike-ratio-tag">3.4x Baseline</span>
-      </div>
-    </div>
-  </div>
+        <!-- Notification Bell -->
+        <button class="icon-notification-btn" id="btn-top-alerts" title="Active Strategic Alerts">
+          <span class="bell-icon">🔔</span>
+          <span class="bell-badge" id="top-alerts-count">3</span>
+        </button>
 
-  <!-- Main App Shell -->
-  <main class="app-container">
-
-    <!-- KPI Metric Cards Ribbon (Feature 1: Dashboard) -->
-    <section class="kpi-ribbon">
-      <!-- Mentions Card -->
-      <div class="kpi-card" id="kpi-mentions-card">
-        <div class="kpi-header">
-          <span class="kpi-title">Total Mentions</span>
-          <span class="kpi-icon">📊</span>
-        </div>
-        <div class="kpi-value-row">
-          <div class="kpi-big-number" id="kpi-total-mentions-val">0</div>
-          <div class="kpi-subtext">Articles<br><span class="text-success" id="kpi-monitor-name-badge">All Sectors</span></div>
-        </div>
-        <div class="kpi-footer-note" id="kpi-volume-rate">24h Monitored Media</div>
-      </div>
-
-      <!-- Trending Narratives Card -->
-      <div class="kpi-card" id="kpi-narratives-card">
-        <div class="kpi-header">
-          <span class="kpi-title">Trending Narratives</span>
-          <span class="kpi-icon">🧭</span>
-        </div>
-        <div class="kpi-value-row">
-          <div class="kpi-big-number text-accent" id="kpi-narratives-count">0</div>
-          <div class="kpi-subtext">Storylines<br><span class="text-muted" id="top-narrative-label">Grouped clusters</span></div>
-        </div>
-        <div class="kpi-footer-note">Origin & Patient Zero Tracking</div>
-      </div>
-
-      <!-- Active Alerts Card -->
-      <div class="kpi-card" id="kpi-alerts-card">
-        <div class="kpi-header">
-          <span class="kpi-title">Alert Count</span>
-          <span class="kpi-icon">🚨</span>
-        </div>
-        <div class="kpi-value-row">
-          <div class="kpi-big-number text-danger" id="kpi-alerts-count-val">0</div>
-          <div class="kpi-subtext">Active Alerts<br><span id="kpi-spike-status" class="text-warning">Baseline normal</span></div>
-        </div>
-        <div class="kpi-footer-note">Trend & Velocity Spikes</div>
-      </div>
-
-      <!-- Sentiment Overview Card (Feature 1) -->
-      <div class="kpi-card sentiment-kpi-card" id="kpi-sentiment-card">
-        <div class="kpi-header">
-          <span class="kpi-title">Sentiment Spectrum</span>
-          <span class="kpi-icon">🎭</span>
-        </div>
-        <div class="sentiment-stacked-bar" id="sentiment-bar-tooltip-wrap">
-          <div class="sentiment-segment seg-pos" id="sent-pos-bar" style="width: 25%" title="Positive: 25%"></div>
-          <div class="sentiment-segment seg-neut" id="sent-neut-bar" style="width: 40%" title="Neutral: 40%"></div>
-          <div class="sentiment-segment seg-neg" id="sent-neg-bar" style="width: 20%" title="Negative: 20%"></div>
-          <div class="sentiment-segment seg-heat" id="sent-heat-bar" style="width: 15%" title="Heated/Conflict: 15%"></div>
-        </div>
-        <div class="sentiment-legend">
-          <span class="sent-tag pos" data-sent="pos">● Pos <span id="sent-pos-val">25%</span></span>
-          <span class="sent-tag neut" data-sent="neut">● Neut <span id="sent-neut-val">40%</span></span>
-          <span class="sent-tag neg" data-sent="neg">● Neg <span id="sent-neg-val">20%</span></span>
-          <span class="sent-tag heat" data-sent="heat">● Heated <span id="sent-heat-val">15%</span></span>
+        <!-- Live Radar Status Pill -->
+        <div class="system-status-indicator" title="Continuous Kenya Political Media Intelligence Active">
+          <span class="pulse-dot"></span>
+          <span class="status-text">POLITICAL RADAR</span>
         </div>
       </div>
+    </header>
 
-      <!-- National Tension Index KPI Card -->
-      <div class="kpi-card tension-kpi" id="kpi-tension-card" title="Click to view full executive situational briefing">
-        <div class="kpi-header">
-          <span class="kpi-title">National Tension Index</span>
-          <span class="kpi-tag" id="threat-level-badge">CALCULATING</span>
-        </div>
-        <div class="kpi-value-row">
-          <div class="kpi-big-number" id="tension-score-val">--</div>
-          <div class="kpi-subtext">/100<br><span id="tension-desc">Live calculation</span></div>
-        </div>
-        <div class="meter-bar-track">
-          <div class="meter-bar-fill" id="tension-meter-fill" style="width: 0%"></div>
-        </div>
-      </div>
-    </section>
+    <!-- CONTENT VIEWS CONTAINER -->
+    <main class="content-area">
 
-    <!-- Telemetry Bar: Mention Trends (24h) & Source Distribution (Feature 1) -->
-    <section class="telemetry-bar">
-      <!-- Mention Trends -->
-      <div class="telemetry-box mention-trends-box">
-        <div class="telemetry-header">
-          <span class="telemetry-title">📈 Mention Trends (Last 24 Hours)</span>
-          <span class="telemetry-sub" id="mention-trend-summary">Analyzing temporal velocity...</span>
-        </div>
-        <div class="mention-trends-chart" id="mention-trends-chart">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-
-      <!-- Source Distribution -->
-      <div class="telemetry-box source-dist-box">
-        <div class="telemetry-header">
-          <span class="telemetry-title">📰 Source Distribution</span>
-          <span class="telemetry-sub" id="source-dist-count">5 Outlets Active</span>
-        </div>
-        <div class="source-distribution-chips" id="source-distribution-chips">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-    </section>
-
-    <!-- Two-Column Workspace -->
-    <div class="workspace-grid">
-      
-      <!-- LEFT COLUMN: Real Data Ingestion Stream -->
-      <section class="panel stream-panel">
-        <div class="panel-header">
-          <div class="panel-title-wrap">
-            <h2 class="panel-title">📡 Real Data Ingestion Stream</h2>
-            <span class="feed-count-tag" id="filtered-count-badge">0 items</span>
+      <!-- ==================================================== -->
+      <!-- VIEW 1: DASHBOARD OVERVIEW (EXACT DESIGN MATCH)      -->
+      <!-- ==================================================== -->
+      <div class="view-pane active" id="view-dashboard">
+        
+        <!-- View Header -->
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">Overview</h1>
+            <p class="view-subtitle">Real-time media monitoring and intelligence for Kenya</p>
           </div>
 
-          <div class="panel-actions">
-            <button class="icon-btn" id="btn-refresh-stream" title="Refresh Stream from Storage">🔄 Refresh</button>
-            <button class="icon-btn" id="btn-select-all" title="Select Top Articles for AI Batch">☑️ AI Batch</button>
-          </div>
-        </div>
-
-        <!-- Filter Controls -->
-        <div class="stream-controls">
-          <!-- Search Input -->
-          <div class="search-input-wrap">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="stream-search" placeholder="Search Kenya politics, Ruto, Raila, IEBC, protests, taxes..." />
-            <button class="clear-search-btn" id="btn-clear-search">✕</button>
-          </div>
-
-          <!-- Media Sources Pills -->
-          <div class="source-pills-row" id="source-filter-pills">
-            <button class="source-pill active" data-source="All">All Outlets</button>
-            <button class="source-pill" data-source="nation">Nation Africa</button>
-            <button class="source-pill" data-source="standard">The Standard</button>
-            <button class="source-pill" data-source="capitalfm">Capital FM</button>
-            <button class="source-pill" data-source="kbc">KBC News</button>
-            <button class="source-pill" data-source="radar">Politics Radar</button>
-          </div>
-
-          <!-- Topic & Risk Selectors + Sort -->
-          <div class="filter-dropdowns-row">
-            <div class="select-group">
-              <label for="topic-select">Topic Filter:</label>
-              <select id="topic-select">
-                <option value="All">All Topics</option>
-                <option value="Elections & Succession">Elections & Succession</option>
-                <option value="Civil Unrest & Protests">Civil Unrest & Protests</option>
-                <option value="Economy & Fiscal Policy">Economy & Fiscal Policy</option>
-                <option value="Executive & Coalition Dynamics">Executive & Coalitions</option>
-                <option value="Judiciary & Legal Disputes">Judiciary & Legal</option>
-                <option value="County & Regional Politics">County Politics</option>
-              </select>
+          <!-- Sector Selector in Dashboard -->
+          <div class="dashboard-sector-selector" id="dashboard-sector-selector">
+            <div class="monitors-pills" id="monitors-pills-list">
+              <!-- Rendered by JS -->
             </div>
-
-            <div class="select-group">
-              <label for="risk-select">Risk Level:</label>
-              <select id="risk-select">
-                <option value="All">All Severity</option>
-                <option value="HIGH">High / Critical Risk</option>
-                <option value="MEDIUM">Medium Risk</option>
-                <option value="LOW">Low Risk</option>
-              </select>
-            </div>
-
-            <div class="select-group">
-              <label for="sort-select">Sort By:</label>
-              <select id="sort-select">
-                <option value="newest">Newest First</option>
-                <option value="risk">Highest Risk First</option>
-                <option value="source">By Outlet Name</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Articles List Container -->
-        <div class="stream-list-container" id="stream-list">
-          <div class="empty-state">
-            <div class="empty-icon">📡</div>
-            <h3>Scanning Kenya Mainstream Media</h3>
-            <p>Fetching real-time RSS from Daily Nation, Standard Media, Capital FM, and KBC...</p>
-            <button class="btn btn-primary" onclick="triggerScan()">Click to Scan Feeds Now</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- RIGHT COLUMN: AI Intelligence & Verification Center -->
-      <section class="panel intelligence-panel">
-        <div class="panel-header">
-          <div class="panel-title-wrap">
-            <h2 class="panel-title">🛡️ AI Intelligence & Verification Center</h2>
-            <span class="badge badge-accent" id="report-timestamp-badge">Real-Time Synthesis</span>
-          </div>
-
-          <div class="panel-actions">
-            <button class="btn btn-sm btn-outline" id="btn-copy-flash" title="Copy Urgent Executive Flash Alert">
-              📋 Copy Alert
-            </button>
-            <button class="btn btn-sm btn-outline" id="btn-export-dossier" title="Export Full Intelligence Briefing">
-              📥 Export Dossier
+            <button class="btn-create-monitor-pill" id="btn-open-create-monitor" title="Create Custom Sector Monitor">
+              <span>➕</span> New Monitor
             </button>
           </div>
         </div>
 
-        <!-- 8-Pillar Intelligence Navigation Tabs -->
-        <div class="intel-tabs-bar" id="intel-tabs-bar">
-          <button class="intel-tab-btn active" data-tab="tab-narratives">
-            <span class="tab-icon">🧭</span> Narratives & Origins <span class="tab-badge" id="tab-badge-narratives">0</span>
-          </button>
-          <button class="intel-tab-btn" data-tab="tab-claims">
-            <span class="tab-icon">⚖️</span> Claims & Verification <span class="tab-badge" id="tab-badge-claims">0</span>
-          </button>
-          <button class="intel-tab-btn" data-tab="tab-alerts">
-            <span class="tab-icon">🚨</span> Strategic Alerts <span class="tab-badge badge-alert" id="tab-badge-alerts">0</span>
-          </button>
-          <button class="intel-tab-btn" data-tab="tab-executive">
-            <span class="tab-icon">📋</span> Executive Briefing
-          </button>
+        <!-- Trend Spike Anomaly Alert Banner (Feature 4) -->
+        <div class="trend-spike-banner" id="trend-spike-banner" style="display: none;">
+          <div class="spike-banner-inner">
+            <div class="spike-badge">🚨 UNUSUAL SPIKE DETECTED</div>
+            <div class="spike-content">
+              <strong id="spike-headline">Sector Mentions Surging</strong>: 
+              <span id="spike-details">Baseline 14/day → Current 48/day (+242% velocity surge).</span>
+            </div>
+            <div class="spike-actions">
+              <span class="spike-ratio-tag" id="spike-ratio-tag">3.4x Baseline</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Scrollable Intelligence Report -->
-        <div class="intelligence-content-scroll" id="intelligence-container">
+        <!-- Top 4 KPI Cards with Sparklines -->
+        <div class="kpi-grid">
+          <!-- Card 1: Total Political Mentions -->
+          <div class="kpi-card" id="kpi-mentions-card">
+            <div class="kpi-card-header">
+              <span class="kpi-icon-pill blue">🏛️</span>
+              <span class="kpi-label">Political Mentions</span>
+            </div>
+            <div class="kpi-card-body">
+              <div class="kpi-data-col">
+                <div class="kpi-value" id="kpi-total-mentions-val">2,481</div>
+                <div class="kpi-delta positive" id="kpi-mentions-delta">
+                  <span>↑ 184%</span> <span class="delta-sub">across Kenyan media</span>
+                </div>
+              </div>
+              <div class="kpi-sparkline" id="sparkline-mentions">
+                <svg viewBox="0 0 100 40" class="spark-svg">
+                  <path d="M 0 35 Q 25 30, 45 25 T 75 12 T 100 8" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+                  <path d="M 0 35 Q 25 30, 45 25 T 75 12 T 100 8 L 100 40 L 0 40 Z" fill="url(#blue-grad)" opacity="0.25"/>
+                  <defs>
+                    <linearGradient id="blue-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#3B82F6"/>
+                      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Multi-Source Corroborated Stories -->
+          <div class="kpi-card" id="kpi-sentiment-card">
+            <div class="kpi-card-header">
+              <span class="kpi-icon-pill green">🌟</span>
+              <span class="kpi-label">Multi-Source Verified</span>
+            </div>
+            <div class="kpi-card-body">
+              <div class="kpi-data-col">
+                <div class="kpi-value" id="kpi-multi-source-val">45</div>
+                <div class="kpi-delta positive" id="kpi-multi-source-delta">
+                  <span>3+ Outlets</span> <span class="delta-sub">cross-corroborated</span>
+                </div>
+              </div>
+              <div class="kpi-sparkline" id="sparkline-sentiment">
+                <svg viewBox="0 0 100 40" class="spark-svg">
+                  <path d="M 0 32 Q 30 25, 55 20 T 80 14 T 100 8" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/>
+                  <path d="M 0 32 Q 30 25, 55 20 T 80 14 T 100 8 L 100 40 L 0 40 Z" fill="url(#green-grad-kpi)" opacity="0.25"/>
+                  <defs>
+                    <linearGradient id="green-grad-kpi" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#10B981"/>
+                      <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Monitored Channels & Outlets -->
+          <div class="kpi-card" id="kpi-sources-card">
+            <div class="kpi-card-header">
+              <span class="kpi-icon-pill blue">📰</span>
+              <span class="kpi-label">Media & Social Outlets</span>
+            </div>
+            <div class="kpi-card-body">
+              <div class="kpi-data-col">
+                <div class="kpi-value" id="kpi-sources-val">14</div>
+                <div class="kpi-delta positive" id="kpi-sources-delta">
+                  <span>Press + X + Reddit</span> <span class="delta-sub">active surveillance</span>
+                </div>
+              </div>
+              <div class="kpi-sparkline" id="sparkline-sources">
+                <svg viewBox="0 0 100 40" class="spark-svg">
+                  <path d="M 0 34 Q 25 32, 50 25 T 75 22 T 100 14" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round"/>
+                  <path d="M 0 34 Q 25 32, 50 25 T 75 22 T 100 14 L 100 40 L 0 40 Z" fill="url(#indigo-grad)" opacity="0.25"/>
+                  <defs>
+                    <linearGradient id="indigo-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#6366F1"/>
+                      <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Active Political Alerts -->
+          <div class="kpi-card" id="kpi-alerts-card">
+            <div class="kpi-card-header">
+              <span class="kpi-icon-pill orange">⚠️</span>
+              <span class="kpi-label">Political Flash Alerts</span>
+            </div>
+            <div class="kpi-card-body">
+              <div class="kpi-data-col">
+                <div class="kpi-value" id="kpi-alerts-count-val">5</div>
+                <div class="kpi-delta alert-tag" id="kpi-alerts-delta">
+                  <span>High Tension / Graft</span> <span class="delta-sub">early triggers</span>
+                </div>
+              </div>
+              <div class="kpi-sparkline" id="sparkline-alerts">
+                <svg viewBox="0 0 100 40" class="spark-svg">
+                  <path d="M 0 36 Q 30 33, 50 30 T 75 22 T 100 16" fill="none" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+                  <path d="M 0 36 Q 30 33, 50 30 T 75 22 T 100 16 L 100 40 L 0 40 Z" fill="url(#amber-grad)" opacity="0.25"/>
+                  <defs>
+                    <linearGradient id="amber-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#F59E0B"/>
+                      <stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle Section: 3 Columns (Volume Chart | Donut Sentiment | Top Narratives) -->
+        <div class="analytics-grid">
           
-          <!-- TAB 1: Narratives & Origins -->
-          <div class="intel-tab-pane active" id="tab-narratives">
-            <div class="tab-intro-banner">
-              <div class="tab-intro-title">🧭 Clustered Narratives & Patient Zero Origins</div>
-              <p class="tab-intro-desc">Related news stories automatically grouped into evolving storylines, tracing the earliest outlet that broke the story and measuring velocity across media houses.</p>
+          <!-- Column 1: Mention Volume Chart -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3 class="card-title">Mention Volume</h3>
+              <div class="chart-legend">
+                <span class="legend-item"><span class="legend-dot blue"></span> Mentions</span>
+                <span class="legend-item"><span class="legend-dot grey"></span> Previous day</span>
+              </div>
             </div>
-            <div class="narratives-grid" id="narratives-list">
-              <div class="empty-state">
-                <div class="empty-icon">🧭</div>
-                <h3>Awaiting Narrative Clustering</h3>
-                <p>Click "Run AI Analysis" or scan a custom topic to group ingested articles into narratives.</p>
+            <div class="chart-body" id="mention-volume-chart-container">
+              <!-- Rendered by JS as responsive SVG spline with gradient -->
+            </div>
+          </div>
+
+          <!-- Column 2: Sentiment Distribution Donut -->
+          <div class="card donut-card">
+            <div class="card-header">
+              <h3 class="card-title">Sentiment Distribution</h3>
+            </div>
+            <div class="donut-card-body">
+              <div class="donut-chart-wrap" id="sentiment-donut-wrap">
+                <!-- Rendered by JS -->
+              </div>
+              <div class="donut-legend" id="sentiment-donut-legend">
+                <div class="donut-legend-row" data-sent="neg">
+                  <span class="dot red"></span>
+                  <span class="label">Negative</span>
+                  <span class="pct" id="donut-neg-pct">67%</span>
+                </div>
+                <div class="donut-legend-row" data-sent="neut">
+                  <span class="dot grey"></span>
+                  <span class="label">Neutral</span>
+                  <span class="pct" id="donut-neut-pct">21%</span>
+                </div>
+                <div class="donut-legend-row" data-sent="pos">
+                  <span class="dot green"></span>
+                  <span class="label">Positive</span>
+                  <span class="pct" id="donut-pos-pct">12%</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- TAB 2: Spreading Claims & Verification Matrix -->
-          <div class="intel-tab-pane" id="tab-claims" style="display: none;">
-            <div class="tab-intro-banner">
-              <div class="tab-intro-title">⚖️ Atomic Claims, Evidence Retrieval & Contradiction Flags</div>
-              <p class="tab-intro-desc">Rapidly spreading claims extracted from newsrooms with supporting citations, official rebuttals, and flagged contradictions between conflicting outlets.</p>
+          <!-- Column 3: Top Narratives Card -->
+          <div class="card top-narratives-card">
+            <div class="card-header">
+              <h3 class="card-title">Top Narratives</h3>
+              <button class="link-btn" onclick="switchView('narratives')">View all →</button>
             </div>
-            <div class="claims-grid" id="claims-list">
-              <div class="empty-state">
-                <div class="empty-icon">⚖️</div>
-                <h3>Awaiting Claim & Stance Extraction</h3>
-                <p>Run analysis to extract atomic claims and evaluate cross-source contradictions.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 3: Strategic Alerts -->
-          <div class="intel-tab-pane" id="tab-alerts" style="display: none;">
-            <div class="tab-intro-banner banner-alert">
-              <div class="tab-intro-title">🚨 Automated Strategic Early-Warning Alerts</div>
-              <p class="tab-intro-desc">Triggered by rapid narrative velocity spikes, disputed high-risk claims, or acute tension surges with actionable stakeholder advisories.</p>
-            </div>
-            <div class="alerts-grid" id="alerts-list">
-              <div class="empty-state">
-                <div class="empty-icon">🛡️</div>
-                <h3>No Critical Escalation Triggers</h3>
-                <p>System continuously monitoring for velocity spikes and contradiction alerts.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 4: Executive Briefing & Situational Dossier -->
-          <div class="intel-tab-pane" id="tab-executive" style="display: none;">
-            <!-- Urgent Flash Alert Box -->
-            <div class="flash-alert-card" id="flash-alert-box">
-              <div class="flash-alert-header">
-                <span class="flash-siren">🚨</span>
-                <span class="flash-title">EARLY-WARNING STAKEHOLDER DISPATCH</span>
-                <span class="badge badge-danger" id="flash-severity-badge">HIGH ALERT</span>
-              </div>
-              <p class="flash-body" id="flash-alert-text">
-                Media surveillance active. Trigger Gemini AI Analysis to generate immediate actionable situational alerts.
-              </p>
-            </div>
-
-            <!-- Executive Intelligence Briefing -->
-            <div class="intel-section">
-              <div class="intel-section-title">
-                <span class="sec-icon">📋</span>
-                <h3>Executive Situational Briefing</h3>
-              </div>
-              <div class="intel-body-box" id="exec-summary-text">
-                <p class="text-muted">Awaiting LLM synthesis of current ingested feeds from Daily Nation, The Standard, Capital FM, and KBC...</p>
-              </div>
-            </div>
-
-            <!-- Top Emerging Public Issues -->
-            <div class="intel-section">
-              <div class="intel-section-title">
-                <span class="sec-icon">⚡</span>
-                <h3>Detected Emerging Flashpoints & Public Issues</h3>
-              </div>
-              <div class="emerging-issues-grid" id="emerging-issues-list">
-                <!-- Rendered via JS -->
-              </div>
-            </div>
-
-            <!-- Regional Volatility & Hotspots -->
-            <div class="intel-section">
-              <div class="intel-section-title">
-                <span class="sec-icon">🗺️</span>
-                <h3>Regional Flashpoints & Volatility Watch</h3>
-              </div>
-              <div class="regional-grid" id="regional-flashpoints-list">
-                <!-- Rendered via JS -->
-              </div>
-            </div>
-
-            <!-- Key Political Actors Under Surveillance -->
-            <div class="intel-section">
-              <div class="intel-section-title">
-                <span class="sec-icon">🎯</span>
-                <h3>Key Actors Stance & Sentiment Radar</h3>
-              </div>
-              <div class="actors-grid" id="actors-list">
-                <!-- Rendered via JS -->
-              </div>
+            <div class="top-narratives-list" id="top-narratives-list">
+              <!-- Populated by JS -->
             </div>
           </div>
 
         </div>
-      </section>
 
-    </div>
-  </main>
+        <!-- Lower Section: 2 Columns (Recent Mentions Stream on Left, Alerts & Trending Topics on Right) -->
+        <div class="lower-grid">
+
+          <!-- Left Column: Recent Mentions Stream -->
+          <div class="card recent-mentions-card">
+            <div class="card-header" style="flex-direction: column; align-items: stretch; gap: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div class="header-left-title">
+                  <h3 class="card-title">🇰🇪 Political Media Stream</h3>
+                  <span class="items-badge" id="filtered-count-badge">0 items</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button class="link-btn" onclick="triggerScan()" title="Ingest latest wire stories">🔄 Sync Feeds</button>
+                  <button class="link-btn" onclick="switchView('narratives')">View all →</button>
+                </div>
+              </div>
+
+              <!-- Political Areas Taxonomy Filter Bar (User's Exact 5 Areas) -->
+              <div class="political-filter-bar" id="political-category-pills">
+                <button class="pol-pill active" data-category="All">
+                  <span>🏛️</span> All Politics
+                </button>
+                <button class="pol-pill" data-category="politics">
+                  <span>🏛️</span> Governance & Executive
+                </button>
+                <button class="pol-pill" data-category="elections">
+                  <span>🗳️</span> Elections & Campaigns
+                </button>
+                <button class="pol-pill" data-category="parliament">
+                  <span>📜</span> Parliament & Senate
+                </button>
+                <button class="pol-pill" data-category="political_conflict">
+                  <span>⚔️</span> Conflict & Protests
+                </button>
+                <button class="pol-pill" data-category="corruption">
+                  <span>🛡️</span> Corruption & Graft
+                </button>
+              </div>
+
+              <!-- Multi-Source Corroboration & Verification Tier Bar -->
+              <div class="corroboration-subbar">
+                <div class="corrob-bar-left">
+                  <span class="corrob-badge-label">⚡ Cross-Source Corroboration:</span>
+                  <div class="corrob-pills-row" id="corroboration-tier-pills">
+                    <button class="corrob-pill active" data-tier="All">All Stories</button>
+                    <button class="corrob-pill tier-multi" data-tier="MULTI_SOURCE" title="Stories corroborated by 3 or more independent newsrooms">🌟 Multi-Source (3+)</button>
+                    <button class="corrob-pill tier-dual" data-tier="DUAL_SOURCE" title="Stories cross-confirmed across 2 media outlets">⚡ Dual-Source (2)</button>
+                    <button class="corrob-pill tier-single" data-tier="SINGLE_SOURCE" title="Single outlet breaking coverage">ℹ️ Single Outlet</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Media Outlets & Social Channels Row -->
+              <div class="source-pills-row" id="source-filter-pills">
+                <button class="source-pill active" data-source="All">All Outlets</button>
+                <button class="source-pill" data-source="Daily Nation">Nation</button>
+                <button class="source-pill" data-source="The Standard">Standard</button>
+                <button class="source-pill" data-source="Citizen Digital">Citizen</button>
+                <button class="source-pill" data-source="The Star">The Star</button>
+                <button class="source-pill" data-source="People Daily">People Daily</button>
+                <button class="source-pill" data-source="Capital FM">Capital FM</button>
+                <button class="source-pill" data-source="KBC">KBC</button>
+                <button class="source-pill" data-source="Kenyans">Kenyans.co.ke</button>
+                <button class="source-pill" data-source="X (Twitter">X / Twitter</button>
+                <button class="source-pill" data-source="Reddit">Reddit r/Kenya</button>
+              </div>
+            </div>
+
+            <!-- Ingestion Stream Items List -->
+            <div class="mentions-table-wrap" id="stream-list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Right Column: Latest Alerts & Trending Topics -->
+          <div class="side-widgets-column">
+
+            <!-- Latest Alerts Card -->
+            <div class="card side-alerts-card">
+              <div class="card-header">
+                <h3 class="card-title">Latest Alerts</h3>
+                <button class="link-btn" onclick="switchView('alerts')">View all →</button>
+              </div>
+              <div class="alerts-compact-list" id="side-alerts-list">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+            <!-- Trending Topics / Hashtags Card -->
+            <div class="card trending-topics-card">
+              <div class="card-header">
+                <h3 class="card-title">📊 Trending Topics</h3>
+              </div>
+              <div class="trending-topics-list" id="trending-topics-list">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ==================================================== -->
+      <!-- VIEW 2: MONITORS VIEW                                -->
+      <!-- ==================================================== -->
+      <div class="view-pane" id="view-monitors">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">Sector & Entity Monitors</h1>
+            <p class="view-subtitle">Track designated corporations, public ministries, and sectors for early anomalies</p>
+          </div>
+          <button class="btn btn-primary" onclick="document.getElementById('modal-monitor-backdrop').classList.add('active')">
+            <span>➕</span> Create New Monitor
+          </button>
+        </div>
+
+        <div class="monitors-view-grid" id="monitors-cards-container">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- ==================================================== -->
+      <!-- VIEW 3: NARRATIVES VIEW                              -->
+      <!-- ==================================================== -->
+      <div class="view-pane" id="view-narratives">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">🧭 Clustered Narratives & Patient Zero Origins</h1>
+            <p class="view-subtitle">Trace originating outlets, spreading velocities, and affected counties across Kenya</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-outline" onclick="triggerAnalysis()">✨ Re-cluster AI Narratives</button>
+          </div>
+        </div>
+
+        <div class="narratives-grid" id="narratives-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- ==================================================== -->
+      <!-- VIEW 4: CLAIMS VIEW                                  -->
+      <!-- ==================================================== -->
+      <div class="view-pane" id="view-claims">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">⚖️ Atomic Claims & Cross-Source Verification Matrix</h1>
+            <p class="view-subtitle">Corroborating citations, official rebuttals, and flagged media contradictions</p>
+          </div>
+        </div>
+
+        <div class="claims-grid" id="claims-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- ==================================================== -->
+      <!-- VIEW 5: STRATEGIC ALERTS VIEW                        -->
+      <!-- ==================================================== -->
+      <div class="view-pane" id="view-alerts">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">🚨 Automated Strategic Early-Warning Alerts</h1>
+            <p class="view-subtitle">Early-warning escalation triggers with actionable stakeholder advisories</p>
+          </div>
+          <button class="btn btn-outline" id="btn-copy-flash">📋 Copy Urgent Dispatch</button>
+        </div>
+
+        <!-- Urgent Flash Alert Banner -->
+        <div class="flash-alert-card" id="flash-alert-box">
+          <div class="flash-alert-header">
+            <span class="flash-siren">🚨</span>
+            <span class="flash-title">EARLY-WARNING STAKEHOLDER DISPATCH</span>
+            <span class="badge badge-danger" id="flash-severity-badge">HIGH ALERT</span>
+          </div>
+          <p class="flash-body" id="flash-alert-text">
+            Media surveillance active across Kenyan newsrooms.
+          </p>
+        </div>
+
+        <div class="alerts-grid" id="alerts-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- ==================================================== -->
+      <!-- VIEW 6: SOURCES / FEEDS VIEW                         -->
+      <!-- ==================================================== -->
+      <div class="view-pane" id="view-sources">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">📰 Monitored Kenyan Media Sources</h1>
+            <p class="view-subtitle">Verified newsrooms feeding live RSS articles into the intelligence pipeline</p>
+          </div>
+          <button class="btn btn-primary" onclick="document.getElementById('modal-feeds-backdrop').classList.add('active')">
+            <span>➕</span> Manage RSS Feeds
+          </button>
+        </div>
+
+        <div class="sources-view-content">
+          <div class="telemetry-box source-dist-box">
+            <div class="telemetry-header">
+              <span class="telemetry-title">Current Article Distribution by Outlet</span>
+              <span class="telemetry-sub" id="source-dist-count">5 Outlets Active</span>
+            </div>
+            <div class="source-distribution-chips" id="source-distribution-chips">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================== -->
+      <!-- VIEW 7: EXECUTIVE REPORTS / DOSSIER VIEW             -->
+      <!-- ==================================================== -->
+      <div class="view-pane" id="view-reports">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">📋 Executive Situational Dossier</h1>
+            <p class="view-subtitle">Complete intelligence briefing on Kenyan political tension and public stability</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-outline" id="btn-export-dossier">📥 Export Dossier (.md)</button>
+          </div>
+        </div>
+
+        <div class="report-view-content">
+          <div class="intel-section">
+            <div class="intel-body-box" id="exec-summary-text">
+              <p class="text-muted">Awaiting LLM synthesis...</p>
+            </div>
+          </div>
+
+          <div class="intel-section">
+            <div class="intel-section-title">
+              <h3>⚡ Detected Emerging Flashpoints</h3>
+            </div>
+            <div class="emerging-issues-grid" id="emerging-issues-list"></div>
+          </div>
+
+          <div class="intel-section">
+            <div class="intel-section-title">
+              <h3>🗺️ Regional Flashpoints Watch</h3>
+            </div>
+            <div class="regional-grid" id="regional-flashpoints-list"></div>
+          </div>
+
+          <div class="intel-section">
+            <div class="intel-section-title">
+              <h3>🎯 Key Actors Stance Radar</h3>
+            </div>
+            <div class="actors-grid" id="actors-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
 
   <!-- MODAL: Kenya Media Feeds Manager -->
   <div class="modal-backdrop" id="modal-feeds-backdrop">
@@ -482,14 +609,11 @@
       </div>
       <div class="modal-body">
         <p class="modal-desc">
-          Active surveillance across verified Kenyan newsrooms. Toggle active monitoring or add custom RSS streams for instant ingestion.
+          Surveillance active across verified Kenyan newsrooms. Toggle active monitoring or add custom RSS streams for instant ingestion.
         </p>
-        <div class="feeds-list" id="modal-feeds-list">
-          <!-- Populated by JS -->
-        </div>
-
+        <div class="feeds-list" id="modal-feeds-list"></div>
         <div class="add-feed-box">
-          <h4>➕ Add / Update Custom RSS Feed</h4>
+          <h4>➕ Add Custom RSS Feed</h4>
           <div class="add-feed-form">
             <input type="text" id="new-feed-name" placeholder="Outlet Name (e.g. People Daily)" />
             <input type="url" id="new-feed-url" placeholder="RSS Feed URL" />
@@ -510,9 +634,7 @@
         <h3 id="modal-article-title">Article Early-Warning Analysis</h3>
         <button class="modal-close-btn" id="btn-close-article-modal">✕</button>
       </div>
-      <div class="modal-body" id="modal-article-body">
-        <!-- Populated on click -->
-      </div>
+      <div class="modal-body" id="modal-article-body"></div>
       <div class="modal-footer">
         <a href="#" target="_blank" class="btn btn-secondary" id="modal-article-link">Read Full Article on Outlet ↗</a>
         <button class="btn btn-primary" id="btn-close-article-footer">Close</button>
@@ -529,7 +651,7 @@
       </div>
       <div class="modal-body">
         <p class="modal-desc">
-          Configure a dedicated media intelligence radar for any sector, agency, or corporation to detect narratives and volume spikes.
+          Configure a dedicated media intelligence radar for any sector, agency, or corporation to detect volume surges and tension.
         </p>
         <div class="form-group">
           <label for="new-monitor-name">Monitor Name (e.g. Energy Sector, Aviation, Telcos):</label>
@@ -538,17 +660,14 @@
         <div class="form-group">
           <label for="new-monitor-keywords">Keywords (comma-separated):</label>
           <input type="text" id="new-monitor-keywords" placeholder="electricity, power outage, tariffs, blackouts" />
-          <small class="form-help">Terms the system scans for in headlines and article content.</small>
         </div>
         <div class="form-group">
           <label for="new-monitor-entities">Entities to Track (comma-separated):</label>
           <input type="text" id="new-monitor-entities" placeholder="Kenya Power, EPRA, KPLC, KenGen" />
-          <small class="form-help">Companies, regulators, parastatals, or official spokespersons.</small>
         </div>
         <div class="form-group">
-          <label for="new-monitor-baseline">Baseline Volume (Expected Mentions / Day):</label>
+          <label for="new-monitor-baseline">Baseline Volume (Mentions / Day):</label>
           <input type="number" id="new-monitor-baseline" value="15" min="1" max="500" />
-          <small class="form-help">Used by the Trend Detection Engine to trigger Unusual Spike alerts (e.g. 2.0x baseline).</small>
         </div>
       </div>
       <div class="modal-footer">

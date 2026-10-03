@@ -18,24 +18,51 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Default 5 Kenya Media RSS Feeds
+// Default 14 Kenya Media RSS Feeds (Mainstream, Digital Native, Social Channels & Topic Wires)
 const DEFAULT_FEEDS = [
   {
     id: 'nation',
-    name: 'Daily Nation (Nation Africa)',
+    name: 'Daily Nation',
     url: 'https://nation.africa/kenya/rss.xml',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:nation.africa+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
-    category: 'Mainstream National',
+    category: 'Mainstream Press',
     color: '#0284c7',
     active: true
   },
   {
     id: 'standard',
-    name: 'The Standard Kenya',
+    name: 'The Standard',
     url: 'https://www.standardmedia.co.ke/rss/headlines.php',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:standardmedia.co.ke+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
-    category: 'Mainstream National',
+    category: 'Mainstream Press',
     color: '#dc2626',
+    active: true
+  },
+  {
+    id: 'citizen',
+    name: 'Citizen Digital',
+    url: 'https://news.google.com/rss/search?q=site:citizen.digital+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
+    fallbackUrl: 'https://news.google.com/rss/search?q=site:citizen.digital+Kenya+governance&hl=en-KE&gl=KE&ceid=KE:en',
+    category: 'Broadcast & Digital',
+    color: '#f97316',
+    active: true
+  },
+  {
+    id: 'thestar',
+    name: 'The Star Kenya',
+    url: 'https://www.the-star.co.ke/rss/',
+    fallbackUrl: 'https://news.google.com/rss/search?q=site:the-star.co.ke+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
+    category: 'Mainstream Press',
+    color: '#e11d48',
+    active: true
+  },
+  {
+    id: 'peopledaily',
+    name: 'People Daily',
+    url: 'https://news.google.com/rss/search?q=site:peopledaily.digital+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
+    fallbackUrl: 'https://news.google.com/rss/search?q=site:peopledaily.digital+Kenya+governance&hl=en-KE&gl=KE&ceid=KE:en',
+    category: 'National Newspaper',
+    color: '#8b5cf6',
     active: true
   },
   {
@@ -43,13 +70,13 @@ const DEFAULT_FEEDS = [
     name: 'Capital FM Kenya',
     url: 'https://www.capitalfm.co.ke/news/feed/',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:capitalfm.co.ke+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
-    category: 'Broadcast / Radio',
+    category: 'Radio & Wire',
     color: '#ea580c',
     active: true
   },
   {
     id: 'kbc',
-    name: 'KBC News (Kenya Broadcasting Corp)',
+    name: 'KBC News',
     url: 'https://www.kbc.co.ke/feed/',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:kbc.co.ke+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'State Broadcaster',
@@ -57,12 +84,66 @@ const DEFAULT_FEEDS = [
     active: true
   },
   {
-    id: 'radar',
-    name: 'Kenya Politics & Election Radar',
-    url: 'https://news.google.com/rss/search?q=Kenya+politics+OR+election+OR+protest+OR+parliament&hl=en-KE&gl=KE&ceid=KE:en',
-    fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+politics+news&hl=en-KE&gl=KE&ceid=KE:en',
-    category: 'Multi-Outlet Ingestion',
-    color: '#9333ea',
+    id: 'kenyans',
+    name: 'Kenyans.co.ke',
+    url: 'https://news.google.com/rss/search?q=site:kenyans.co.ke+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
+    fallbackUrl: 'https://news.google.com/rss/search?q=site:kenyans.co.ke+Kenya+government&hl=en-KE&gl=KE&ceid=KE:en',
+    category: 'Digital Native',
+    color: '#2563eb',
+    active: true
+  },
+  {
+    id: 'wire_politics',
+    name: 'Politics & Governance Radar',
+    url: 'https://news.google.com/rss/search?q=Kenya+(%22politics%22+OR+%22government%22+OR+%22governance%22+OR+%22politician%22+OR+%22political+party%22+OR+%22opposition%22)&hl=en-KE&gl=KE&ceid=KE:en',
+    fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+politics+government&hl=en-KE&gl=KE&ceid=KE:en',
+    category: 'Topic Wire - Politics',
+    color: '#3b82f6',
+    active: true
+  },
+  {
+    id: 'wire_elections',
+    name: 'Elections & Campaigns Radar',
+    url: 'https://news.google.com/rss/search?q=Kenya+(%22election%22+OR+%22voter+registration%22+OR+%22campaign%22+OR+%22candidate%22+OR+%22nomination%22+OR+%22polling%22+OR+%22ballot%22+OR+%22tallying%22)&hl=en-KE&gl=KE&ceid=KE:en',
+    fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+election+IEBC+campaign&hl=en-KE&gl=KE&ceid=KE:en',
+    category: 'Topic Wire - Elections',
+    color: '#8b5cf6',
+    active: true
+  },
+  {
+    id: 'wire_parliament',
+    name: 'Parliament & Senate Watch',
+    url: 'https://news.google.com/rss/search?q=Kenya+(%22National+Assembly%22+OR+%22Senate%22+OR+%22MP%22+OR+%22senator%22+OR+%22bill%22+OR+%22motion%22+OR+%22committee%22+OR+%22Hansard%22+OR+%22Order+Paper%22)&hl=en-KE&gl=KE&ceid=KE:en',
+    fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+Parliament+Senate+bill&hl=en-KE&gl=KE&ceid=KE:en',
+    category: 'Topic Wire - Parliament',
+    color: '#10b981',
+    active: true
+  },
+  {
+    id: 'wire_conflict',
+    name: 'Political Conflict & Disputes',
+    url: 'https://news.google.com/rss/search?q=Kenya+(%22dispute%22+OR+%22clash%22+OR+%22protest%22+OR+%22accuses%22+OR+%22allegation%22+OR+%22controversy%22+OR+%22backlash%22+OR+%22deadlock%22+OR+%22boycott%22)&hl=en-KE&gl=KE&ceid=KE:en',
+    fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+protest+clash+dispute&hl=en-KE&gl=KE&ceid=KE:en',
+    category: 'Topic Wire - Conflict',
+    color: '#ef4444',
+    active: true
+  },
+  {
+    id: 'wire_corruption',
+    name: 'Corruption & EACC Watch',
+    url: 'https://news.google.com/rss/search?q=Kenya+(%22corruption%22+OR+%22bribery%22+OR+%22fraud%22+OR+%22graft%22+OR+%22EACC%22+OR+%22investigation%22+OR+%22audit%22+OR+%22procurement%22)&hl=en-KE&gl=KE&ceid=KE:en',
+    fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+corruption+graft+EACC&hl=en-KE&gl=KE&ceid=KE:en',
+    category: 'Topic Wire - Corruption',
+    color: '#f59e0b',
+    active: true
+  },
+  {
+    id: 'social_pulse',
+    name: 'Social Media Political Pulse (X & Reddit)',
+    url: 'https://news.google.com/rss/search?q=Kenya+(site:x.com+OR+site:twitter.com+OR+site:reddit.com/r/kenya+OR+%22on+X%22+OR+%22Kenyans+on+X%22)+(politics+OR+Ruto+OR+Raila+OR+Gachagua+OR+protest+OR+corruption)&hl=en-KE&gl=KE&ceid=KE:en',
+    fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+Twitter+reactions+politics&hl=en-KE&gl=KE&ceid=KE:en',
+    category: 'Social Media Channels',
+    color: '#0ea5e9',
     active: true
   }
 ];
@@ -73,51 +154,150 @@ const FEEDS_FILE = path.join(DATA_DIR, 'feeds.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const MONITORS_FILE = path.join(DATA_DIR, 'monitors.json');
 
-// Default Kenyan Sector & Risk Monitors
+// Default Kenyan Political Area Monitors (Exact User Taxonomy)
 const DEFAULT_MONITORS = [
   {
-    id: 'monitor_energy',
-    name: 'Energy Sector',
-    icon: '⚡',
-    description: 'Surveillance on national grid reliability, electricity tariffs, power outages, and state utilities.',
-    keywords: ['electricity', 'power outage', 'tariffs', 'power', 'energy', 'blackout', 'tokens', 'grid', 'kplc'],
-    entities: ['Kenya Power', 'EPRA', 'KenGen', 'Energy Ministry'],
-    baselinePerDay: 50,
-    currentDayMentions: 185,
+    id: 'monitor_politics',
+    name: 'Politics & State Governance',
+    icon: '🏛️',
+    category: 'politics',
+    description: 'Surveillance on national politics, executive governance, state leadership, coalition realignments, and opposition maneuvers.',
+    keywords: ['politics', 'government', 'governance', 'politician', 'political party', 'opposition', 'parliament'],
+    entities: ['State House', 'Cabinet', 'Opposition', 'Azimio', 'Kenya Kwanza', 'UDA', 'ODM'],
+    baselinePerDay: 45,
     createdAt: new Date().toISOString()
   },
   {
-    id: 'monitor_water',
-    name: 'Water & Urban Services',
-    icon: '💧',
-    description: 'Surveillance on Nairobi water shortages, dam rationing, county services, and public utility protests.',
-    keywords: ['water shortages', 'water', 'rationing', 'shortages', 'boreholes', 'dams', 'clean water', 'sanitation', 'nairobi water'],
-    entities: ['Nairobi Water', 'Athi Water', 'County Government', 'EPRA'],
-    baselinePerDay: 100,
-    currentDayMentions: 850,
+    id: 'monitor_elections',
+    name: 'Elections & Campaigns',
+    icon: '🗳️',
+    category: 'elections',
+    description: 'Monitoring voter registration, 2027 campaigns, candidate nominations, IEBC polling, ballot tallying, and succession.',
+    keywords: ['election', 'voter registration', 'campaign', 'candidate', 'nomination', 'polling', 'ballot', 'vote', 'tallying'],
+    entities: ['IEBC', 'Elections Board', 'Registrar of Political Parties', 'Voter Roll'],
+    baselinePerDay: 30,
     createdAt: new Date().toISOString()
   },
   {
-    id: 'monitor_health',
-    name: 'Healthcare & SHA',
-    icon: '🏥',
-    description: 'Transition from NHIF to SHA, hospital services, medical equipment, and health workers.',
-    keywords: ['SHA', 'NHIF', 'hospital', 'doctor', 'strike', 'medicine', 'health', 'knh'],
-    entities: ['Ministry of Health', 'KNH', 'KMPDU', 'SHA Board', 'KEMSA'],
-    baselinePerDay: 18,
+    id: 'monitor_parliament',
+    name: 'National Assembly & Senate',
+    icon: '📜',
+    category: 'parliament',
+    description: 'Legislative surveillance on bills, motions, committee hearings, MPs, senators, Hansard transcripts, and Order Papers.',
+    keywords: ['National Assembly', 'Senate', 'MP', 'senator', 'bill', 'motion', 'committee', 'Hansard', 'Order Paper'],
+    entities: ['National Assembly', 'Senate', 'Speaker Wetangula', 'Speaker Kingi', 'Departmental Committees'],
+    baselinePerDay: 35,
     createdAt: new Date().toISOString()
   },
   {
-    id: 'monitor_economy',
-    name: 'Taxation & Fiscal Policy',
-    icon: '📈',
-    description: 'Revenue mobilization, cost of living, fuel pricing, national debt, and treasury decisions.',
-    keywords: ['tax', 'kra', 'budget', 'fuel', 'inflation', 'shilling', 'debt', 'economy'],
-    entities: ['KRA', 'National Treasury', 'Central Bank', 'EPRA', 'Parliament'],
-    baselinePerDay: 28,
+    id: 'monitor_political_conflict',
+    name: 'Political Conflict & Disputes',
+    icon: '⚔️',
+    category: 'political_conflict',
+    description: 'Surveillance on political disputes, clashes, civil protests, verbal accusations, controversies, backlashes, deadlocks, and boycotts.',
+    keywords: ['dispute', 'clash', 'protest', 'accuses', 'allegation', 'controversy', 'backlash', 'deadlock', 'boycott'],
+    entities: ['Civil Society', 'Police Service', 'Demonstrators', 'Disputing Coalitions'],
+    baselinePerDay: 25,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'monitor_corruption',
+    name: 'Anti-Corruption & EACC Watch',
+    icon: '🛡️',
+    category: 'corruption',
+    description: 'Tracking graft allegations, bribery scandals, public fraud, EACC investigations, forensic audits, and procurement irregularities.',
+    keywords: ['corruption', 'bribery', 'fraud', 'graft', 'EACC', 'investigation', 'audit', 'procurement'],
+    entities: ['EACC', 'DCI', 'Auditor General', 'Public Procurement Regulatory Authority', 'Courts'],
+    baselinePerDay: 20,
     createdAt: new Date().toISOString()
   }
 ];
+
+// USER-SUPPLIED POLITICAL TAXONOMY & KEYWORDS
+const POLITICAL_TAXONOMY = {
+  politics: {
+    id: 'politics',
+    label: 'Politics & Governance',
+    icon: '🏛️',
+    color: '#3b82f6',
+    keywords: [
+      'politics',
+      'government',
+      'governance',
+      'politician',
+      'political party',
+      'opposition',
+      'parliament'
+    ]
+  },
+  elections: {
+    id: 'elections',
+    label: 'Elections & Campaigns',
+    icon: '🗳️',
+    color: '#8b5cf6',
+    keywords: [
+      'election',
+      'voter registration',
+      'campaign',
+      'candidate',
+      'nomination',
+      'polling',
+      'ballot',
+      'vote',
+      'tallying'
+    ]
+  },
+  parliament: {
+    id: 'parliament',
+    label: 'Parliament & Legislation',
+    icon: '📜',
+    color: '#10b981',
+    keywords: [
+      'National Assembly',
+      'Senate',
+      'MP',
+      'senator',
+      'bill',
+      'motion',
+      'committee',
+      'Hansard',
+      'Order Paper'
+    ]
+  },
+  political_conflict: {
+    id: 'political_conflict',
+    label: 'Political Conflict & Disputes',
+    icon: '⚔️',
+    color: '#ef4444',
+    keywords: [
+      'dispute',
+      'clash',
+      'protest',
+      'accuses',
+      'allegation',
+      'controversy',
+      'backlash',
+      'deadlock',
+      'boycott'
+    ]
+  },
+  corruption: {
+    id: 'corruption',
+    label: 'Corruption & Graft (EACC)',
+    icon: '🛡️',
+    color: '#f59e0b',
+    keywords: [
+      'corruption',
+      'bribery',
+      'fraud',
+      'graft',
+      'EACC',
+      'investigation',
+      'audit',
+      'procurement'
+    ]
+  }
+};
 
 function readJson(file, defaultVal) {
   try {
@@ -153,67 +333,218 @@ if (process.env.GEMINI_API_KEY && !config.geminiApiKey) {
 }
 
 const rssParser = new Parser({
-  timeout: 10000,
+  timeout: 12000,
+  customFields: {
+    item: [
+      ['source', 'sourceInfo']
+    ]
+  },
   headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
     'Accept': 'application/rss+xml, application/xml, text/xml, */*'
   }
 });
 
-// Real keyword mapping for Kenyan political ecosystem
-const POLITICAL_KEYWORDS = [
-  'election', 'elections', '2027', 'ruto', 'raila', 'gachagua', 'kalonzo', 'mudavadi',
-  'parliament', 'senate', 'mp', 'mps', 'bill', 'finance bill', 'court', 'iebc',
-  'protest', 'protests', 'strike', 'gen z', 'maandamano', 'police', 'tax', 'taxes',
-  'politics', 'political', 'uda', 'odm', 'wiper', 'azimio', 'kenya kwanza', 'governor',
-  'corruption', 'esacc', 'dci', 'judiciary', 'cabinet', 'state house', 'shif', 'sha',
-  'sifuna', 'murkomen', 'uhuru', 'wetangula', 'omutatah', 'kindiki'
-];
+// Canonical Source Normalizer
+function normalizeSourceName(rawSource, title, feed) {
+  let s = (rawSource || '').trim();
+  if (!s && title) {
+    const match = title.match(/\s*-\s*([A-Za-z0-9\s\.\&\/\-\@]+)$/);
+    if (match) s = match[1].trim();
+  }
+  if (!s) s = feed.name;
 
-function scoreRelevance(text) {
-  if (!text) return 0;
-  const lower = text.toLowerCase();
-  let score = 0;
-  POLITICAL_KEYWORDS.forEach(kw => {
-    if (lower.includes(kw)) score += 1;
-  });
-  return score;
+  const lower = s.toLowerCase();
+  if (lower.includes('nation')) return { name: 'Daily Nation', color: '#0284c7' };
+  if (lower.includes('standard')) return { name: 'The Standard', color: '#dc2626' };
+  if (lower.includes('citizen')) return { name: 'Citizen Digital', color: '#f97316' };
+  if (lower.includes('the star') || lower === 'the-star.co.ke' || lower === 'the star') return { name: 'The Star Kenya', color: '#e11d48' };
+  if (lower.includes('people daily')) return { name: 'People Daily', color: '#8b5cf6' };
+  if (lower.includes('capital')) return { name: 'Capital FM', color: '#ea580c' };
+  if (lower.includes('kbc')) return { name: 'KBC News', color: '#16a34a' };
+  if (lower.includes('kenyans')) return { name: 'Kenyans.co.ke', color: '#2563eb' };
+  if (lower.includes('x.com') || lower.includes('twitter')) return { name: 'X (Twitter Kenya)', color: '#0ea5e9' };
+  if (lower.includes('reddit')) return { name: 'Reddit r/Kenya', color: '#ff4500' };
+  if (lower.includes('ntv')) return { name: 'NTV Kenya', color: '#0d9488' };
+  if (lower.includes('pulse')) return { name: 'Pulse Live Kenya', color: '#ec4899' };
+  if (lower.includes('bbc')) return { name: 'BBC News Africa', color: '#b91c1c' };
+  if (lower.includes('bloomberg')) return { name: 'Bloomberg', color: '#1d4ed8' };
+  if (lower.includes('reuters')) return { name: 'Reuters', color: '#d97706' };
+
+  return { name: s || feed.name, color: feed.color || '#6366f1' };
 }
 
-function detectTopic(text) {
-  const lower = (text || '').toLowerCase();
-  if (lower.includes('election') || lower.includes('iebc') || lower.includes('voter') || lower.includes('ballot') || lower.includes('2027') || lower.includes('campaign')) {
-    return 'Elections & Succession';
+// Political Article Classifier based on the 5 Taxonomy Categories
+function classifyPoliticalArticle(title, content) {
+  const combined = `${title || ''} ${content || ''}`.toLowerCase();
+  
+  let bestCategory = 'politics';
+  let maxMatches = -1;
+  let allMatchedKeywords = [];
+  const categoryScores = {};
+
+  for (const [catKey, catDef] of Object.entries(POLITICAL_TAXONOMY)) {
+    let score = 0;
+    const matchedHere = [];
+    for (const kw of catDef.keywords) {
+      const lowerKw = kw.toLowerCase();
+      // Match exact boundary or phrase
+      const escaped = lowerKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escaped}`, 'i');
+      if (regex.test(combined)) {
+        score++;
+        matchedHere.push(kw);
+      }
+    }
+    categoryScores[catKey] = score;
+    if (matchedHere.length > 0) {
+      allMatchedKeywords.push(...matchedHere);
+    }
+    if (score > maxMatches) {
+      maxMatches = score;
+      bestCategory = catKey;
+    }
   }
-  if (lower.includes('protest') || lower.includes('strike') || lower.includes('maandamano') || lower.includes('riot') || lower.includes('clash') || lower.includes('gen z') || lower.includes('tear gas')) {
-    return 'Civil Unrest & Protests';
+
+  // If tied or zero matches, check prominent political terms
+  if (maxMatches === 0) {
+    if (combined.includes('election') || combined.includes('vote') || combined.includes('poll') || combined.includes('iebc')) {
+      bestCategory = 'elections';
+    } else if (combined.includes('parliament') || combined.includes('senate') || combined.includes('mp') || combined.includes('bill')) {
+      bestCategory = 'parliament';
+    } else if (combined.includes('protest') || combined.includes('clash') || combined.includes('dispute') || combined.includes('riot')) {
+      bestCategory = 'political_conflict';
+    } else if (combined.includes('corruption') || combined.includes('graft') || combined.includes('eacc') || combined.includes('bribe')) {
+      bestCategory = 'corruption';
+    } else {
+      bestCategory = 'politics';
+    }
   }
-  if (lower.includes('bill') || lower.includes('tax') || lower.includes('finance') || lower.includes('budget') || lower.includes('cost of living') || lower.includes('economy') || lower.includes('shif') || lower.includes('sha')) {
-    return 'Economy & Fiscal Policy';
-  }
-  if (lower.includes('gachagua') || lower.includes('impeach') || lower.includes('ruto') || lower.includes('cabinet') || lower.includes('reshuffle') || lower.includes('uda') || lower.includes('odm') || lower.includes('kindiki') || lower.includes('coalition')) {
-    return 'Executive & Coalition Dynamics';
-  }
-  if (lower.includes('court') || lower.includes('judge') || lower.includes('ruling') || lower.includes('high court') || lower.includes('petition') || lower.includes('cj koome')) {
-    return 'Judiciary & Legal Disputes';
-  }
-  if (lower.includes('county') || lower.includes('governor') || lower.includes('devolution') || lower.includes('ward')) {
-    return 'County & Regional Politics';
-  }
-  return 'National Politics';
+
+  const uniqueMatchedKeywords = Array.from(new Set(allMatchedKeywords));
+  const catMeta = POLITICAL_TAXONOMY[bestCategory];
+
+  return {
+    politicalCategory: bestCategory,
+    politicalCategoryLabel: catMeta.label,
+    politicalCategoryIcon: catMeta.icon,
+    politicalCategoryColor: catMeta.color,
+    matchedKeywords: uniqueMatchedKeywords,
+    relevanceScore: uniqueMatchedKeywords.length,
+    categoryScores
+  };
 }
 
+// Early Risk Estimator
 function estimateEarlyRisk(title, content) {
-  const combined = (title + ' ' + content).toLowerCase();
-  const highRiskTokens = ['crisis', 'protest', 'strike', 'clash', 'killed', 'arrest', 'violence', 'impeach', 'boycott', 'paralyzed', 'threat', 'court halts', 'row', 'chaos', 'ultimatum', 'warns', 'feud'];
-  const medRiskTokens = ['warning', 'dispute', 'split', 'faults', 'demands', 'probe', 'rejects', 'standoff', 'defiant', 'petition', 'heats up', 'clash', 'scramble'];
+  const combined = `${title || ''} ${content || ''}`.toLowerCase();
+  const highRiskTokens = ['crisis', 'protest', 'strike', 'clash', 'killed', 'arrest', 'violence', 'impeach', 'boycott', 'paralyzed', 'threat', 'court halts', 'row', 'chaos', 'ultimatum', 'warns', 'feud', 'bribery', 'scandal', 'graft', 'deadlock'];
+  const medRiskTokens = ['warning', 'dispute', 'split', 'faults', 'demands', 'probe', 'rejects', 'standoff', 'defiant', 'petition', 'heats up', 'allegation', 'controversy', 'backlash', 'scrutiny'];
 
-  let highCount = highRiskTokens.filter(t => combined.includes(t)).length;
-  let medCount = medRiskTokens.filter(t => combined.includes(t)).length;
+  const highCount = highRiskTokens.filter(t => combined.includes(t)).length;
+  const medCount = medRiskTokens.filter(t => combined.includes(t)).length;
 
   if (highCount >= 2 || (highCount >= 1 && medCount >= 1)) return 'HIGH';
   if (highCount >= 1 || medCount >= 1) return 'MEDIUM';
   return 'LOW';
+}
+
+// Legacy topic helper for backwards compatibility
+function detectTopic(title, content, politicalCategoryLabel) {
+  if (politicalCategoryLabel) return politicalCategoryLabel;
+  const lower = `${title || ''} ${content || ''}`.toLowerCase();
+  if (lower.includes('election') || lower.includes('voter') || lower.includes('candidate')) return 'Elections & Campaigns';
+  if (lower.includes('parliament') || lower.includes('senate') || lower.includes('bill')) return 'Parliament & Legislation';
+  if (lower.includes('protest') || lower.includes('clash') || lower.includes('dispute')) return 'Political Conflict & Disputes';
+  if (lower.includes('corruption') || lower.includes('graft') || lower.includes('eacc')) return 'Corruption & Graft (EACC)';
+  return 'Politics & Governance';
+}
+
+// ===============================================================
+// MULTI-SOURCE NEWS CLASSIFICATION & CORROBORATION ENGINE
+// ===============================================================
+const STOP_WORDS = new Set([
+  'about', 'after', 'again', 'against', 'all', 'also', 'among', 'been', 'being', 'between',
+  'both', 'during', 'each', 'from', 'have', 'having', 'here', 'into', 'more', 'most',
+  'only', 'other', 'over', 'same', 'some', 'such', 'than', 'that', 'their', 'them',
+  'then', 'there', 'these', 'they', 'this', 'those', 'through', 'under', 'until', 'very',
+  'what', 'when', 'where', 'which', 'while', 'with', 'within', 'would', 'kenya', 'news',
+  'says', 'said', 'state', 'will', 'report', 'reports', 'break', 'breaking', 'daily',
+  'standard', 'star', 'citizen', 'kbc', 'capital', 'people', 'online', 'watch'
+]);
+
+const PROMINENT_ENTITIES = [
+  'ruto', 'gachagua', 'raila', 'kindiki', 'sifuna', 'kalonzo', 'mudavadi', 'wetangula',
+  'omutatah', 'waiguru', 'koome', 'eacc', 'iebc', 'dci', 'kra', 'kdf', 'national assembly',
+  'senate', 'finance bill', 'shif', 'sha', 'odm', 'uda', 'azimio', 'kenya kwanza'
+];
+
+function extractTitleTokens(title) {
+  return (title || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 4 && !STOP_WORDS.has(w));
+}
+
+function calculateMultiSourceCorroboration(articlesList) {
+  if (!Array.isArray(articlesList) || articlesList.length === 0) return articlesList;
+
+  // Pre-tokenize titles
+  const tokenized = articlesList.map(a => {
+    const tokens = extractTitleTokens(a.title);
+    const tokenSet = new Set(tokens);
+    const entities = PROMINENT_ENTITIES.filter(e => (a.title || '').toLowerCase().includes(e));
+    return { id: a.id, sourceName: a.sourceName, tokens, tokenSet, entities };
+  });
+
+  articlesList.forEach((art, i) => {
+    const current = tokenized[i];
+    const corroboratingSources = new Set();
+    corroboratingSources.add(art.sourceName);
+
+    tokenized.forEach((other, j) => {
+      if (i === j) return;
+      
+      // Calculate token intersection
+      const commonTokens = other.tokens.filter(t => current.tokenSet.has(t));
+      const sharedEntities = other.entities.filter(e => current.entities.includes(e));
+
+      // Match condition: 3+ shared significant words OR 2+ shared words with a prominent entity OR 2+ shared prominent entities
+      const isMatch = (commonTokens.length >= 3) ||
+        (commonTokens.length >= 2 && sharedEntities.length >= 1) ||
+        (sharedEntities.length >= 2 && commonTokens.length >= 1);
+
+      if (isMatch) {
+        corroboratingSources.add(other.sourceName);
+      }
+    });
+
+    const sourcesArray = Array.from(corroboratingSources);
+    const count = sourcesArray.length;
+
+    art.sourceCount = count;
+    art.corroboratingSources = sourcesArray;
+
+    if (count >= 3) {
+      art.corroborationTier = 'MULTI_SOURCE';
+      art.corroborationBadge = `🌟 ${count} Outlets Verified`;
+      art.corroborationTierLabel = 'Multi-Source Verified';
+      art.corroborationSummary = `Reported and corroborated by ${count} independent newsrooms: ${sourcesArray.slice(0, 3).join(', ')}${count > 3 ? ` and ${count - 3} more` : ''}.`;
+    } else if (count === 2) {
+      art.corroborationTier = 'DUAL_SOURCE';
+      art.corroborationBadge = `⚡ 2 Outlets Corroborated`;
+      art.corroborationTierLabel = 'Dual-Source Confirmed';
+      art.corroborationSummary = `Cross-reported by 2 media outlets: ${sourcesArray.join(' and ')}.`;
+    } else {
+      art.corroborationTier = 'SINGLE_SOURCE';
+      art.corroborationBadge = 'Single Outlet';
+      art.corroborationTierLabel = 'Single-Source Report';
+      art.corroborationSummary = `Exclusively reported by ${art.sourceName}; awaiting corroboration across other desks.`;
+    }
+  });
+
+  return articlesList;
 }
 
 // Ingestion Function
@@ -246,34 +577,49 @@ async function ingestFeed(feed) {
   console.log(`[RSS] Parsed ${parsed.items.length} raw items from ${feed.name}`);
 
   for (const item of parsed.items) {
-    const title = (item.title || '').trim();
-    if (!title) continue;
+    const rawTitle = (item.title || '').trim();
+    if (!rawTitle) continue;
 
-    // clean title if Google News or media suffix
-    const cleanTitle = title.replace(/\s*-\s*(Daily Nation|The Standard|Capital FM|The Star|KBC|People Daily|Citizen).*$/i, '').trim();
+    // Clean title suffix
+    const cleanTitle = rawTitle.replace(/\s*-\s*(Daily Nation|The Standard|Capital FM|The Star|KBC|People Daily|Citizen|x\.com|Twitter|Reddit|Bloomberg|Reuters).*$/i, '').trim();
     const content = (item.contentSnippet || item.content || item.summary || '').trim();
     const link = item.link || item.guid || '';
     const pubDate = item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString();
 
-    const relevance = scoreRelevance(`${cleanTitle} ${content}`);
-    const topic = detectTopic(`${cleanTitle} ${content}`);
+    // Determine actual source publisher
+    const rawSource = (typeof item.sourceInfo === 'string' ? item.sourceInfo : (typeof item.source === 'string' ? item.source : (item.source && item.source._ ? item.source._ : '')));
+    const sourceInfo = normalizeSourceName(rawSource, rawTitle, feed);
+
+    // Classify into Political Taxonomy (5 Categories)
+    const classification = classifyPoliticalArticle(cleanTitle, content);
     const risk = estimateEarlyRisk(cleanTitle, content);
+    const topic = detectTopic(cleanTitle, content, classification.politicalCategoryLabel);
 
     const id = Buffer.from(link || cleanTitle).toString('base64').substring(0, 24);
 
     results.push({
       id,
-      title: cleanTitle || title,
-      rawTitle: title,
+      title: cleanTitle || rawTitle,
+      rawTitle,
       summary: content ? content.slice(0, 320) : 'No excerpt provided.',
       link,
       pubDate,
       sourceId: feed.id,
-      sourceName: feed.name,
-      sourceColor: feed.color,
+      sourceName: sourceInfo.name,
+      sourceColor: sourceInfo.color,
       topic,
-      relevanceScore: relevance,
+      politicalCategory: classification.politicalCategory,
+      politicalCategoryLabel: classification.politicalCategoryLabel,
+      politicalCategoryIcon: classification.politicalCategoryIcon,
+      politicalCategoryColor: classification.politicalCategoryColor,
+      matchedKeywords: classification.matchedKeywords,
+      relevanceScore: classification.relevanceScore,
+      categoryScores: classification.categoryScores,
       initialRisk: risk,
+      sourceCount: 1,
+      corroboratingSources: [sourceInfo.name],
+      corroborationTier: 'SINGLE_SOURCE',
+      corroborationBadge: 'Single Outlet',
       scannedAt: new Date().toISOString()
     });
   }
@@ -283,7 +629,7 @@ async function ingestFeed(feed) {
 
 // Full Ingestion Pipeline
 async function runIngestionPipeline() {
-  console.log('[PIPELINE] Starting ingestion across active feeds...');
+  console.log('[PIPELINE] Starting ingestion across active media feeds & political wires...');
   const activeFeeds = feeds.filter(f => f.active !== false);
   const feedPromises = activeFeeds.map(f => ingestFeed(f));
   const settled = await Promise.allSettled(feedPromises);
@@ -314,12 +660,15 @@ async function runIngestionPipeline() {
   articles = Array.from(existingMap.values());
   articles.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
 
-  if (articles.length > 250) {
-    articles = articles.slice(0, 250);
+  if (articles.length > 300) {
+    articles = articles.slice(0, 300);
   }
 
+  // Execute Multi-Source News Classification & Corroboration Engine
+  calculateMultiSourceCorroboration(articles);
+
   writeJson(ARTICLES_FILE, articles);
-  console.log(`[PIPELINE] Ingestion finished. ${addedCount} new articles added. Total cached: ${articles.length}`);
+  console.log(`[PIPELINE] Ingestion finished. ${addedCount} new stories added. Total cached: ${articles.length}`);
   return { addedCount, total: articles.length };
 }
 
@@ -443,7 +792,7 @@ DO NOT include markdown fences like \`\`\`json. Return ONLY the raw JSON object 
   if (apiKey && apiKey.length > 10) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      const modelNames = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
       let lastErr = null;
 
       for (const mName of modelNames) {
@@ -688,7 +1037,6 @@ function generateDynamicAnalysisFromArticles(targetArticles, reason) {
 // API Routes
 app.get('/api/status', (req, res) => {
   const hasKey = Boolean(config.geminiApiKey || process.env.GEMINI_API_KEY);
-  const activeKey = config.geminiApiKey || process.env.GEMINI_API_KEY || '';
   res.json({
     status: 'online',
     appName: 'Kenya Media Intelligence - AI Early-Warning System',
@@ -696,8 +1044,23 @@ app.get('/api/status', (req, res) => {
     activeFeedsCount: feeds.filter(f => f.active).length,
     hasGeminiKey: hasKey,
     hasAnalysis: Boolean(latestAnalysis),
-    lastScanTime: articles[0]?.scannedAt || null,
+    lastScanTime: lastScrapeTimestamp ? new Date(lastScrapeTimestamp).toISOString() : (articles[0]?.scannedAt || null),
+    nextScanTime: nextScrapeTimestamp ? new Date(nextScrapeTimestamp).toISOString() : null,
+    autoScrapeIntervalHours: SCRAPE_INTERVAL_HOURS,
+    autoScrapeActive: true,
     modelUsed: latestAnalysis?.modelUsed || 'Pending Analysis'
+  });
+});
+
+app.get('/api/scraper/status', (req, res) => {
+  res.json({
+    active: true,
+    intervalHours: SCRAPE_INTERVAL_HOURS,
+    intervalMs: SCRAPE_INTERVAL_MS,
+    lastScrapeTime: new Date(lastScrapeTimestamp).toISOString(),
+    nextScrapeTime: new Date(nextScrapeTimestamp).toISOString(),
+    minutesUntilNextScrape: Math.max(0, Math.round((nextScrapeTimestamp - Date.now()) / 60000)),
+    isScrapingInProgress
   });
 });
 
@@ -758,6 +1121,9 @@ app.post('/api/config/key', (req, res) => {
 app.post('/api/scan', async (req, res) => {
   try {
     const result = await runIngestionPipeline();
+    lastScrapeTimestamp = Date.now();
+    nextScrapeTimestamp = Date.now() + SCRAPE_INTERVAL_MS;
+
     // Run live Gemini analysis on freshly ingested articles
     let newReport = null;
     try {
@@ -779,22 +1145,63 @@ app.post('/api/scan', async (req, res) => {
   }
 });
 
+app.get('/api/political-taxonomy', (req, res) => {
+  const stats = {};
+  for (const [key, val] of Object.entries(POLITICAL_TAXONOMY)) {
+    const count = articles.filter(a => a.politicalCategory === key).length;
+    stats[key] = {
+      ...val,
+      articleCount: count
+    };
+  }
+  res.json({
+    taxonomy: stats,
+    categories: Object.values(stats)
+  });
+});
+
 app.get('/api/articles', (req, res) => {
   let filtered = [...articles];
-  const { topic, source, risk, q, limit } = req.query;
+  const { topic, source, risk, q, limit, politicalCategory, sourceTier, minSources } = req.query;
+
+  // Filter by user political category (politics, elections, parliament, political_conflict, corruption)
+  if (politicalCategory && politicalCategory !== 'All') {
+    filtered = filtered.filter(a => a.politicalCategory === politicalCategory || a.topic === politicalCategory);
+  }
+
+  // Filter by source corroboration tier (MULTI_SOURCE, DUAL_SOURCE, SINGLE_SOURCE)
+  if (sourceTier && sourceTier !== 'All') {
+    filtered = filtered.filter(a => a.corroborationTier === sourceTier);
+  }
+
+  // Filter by minimum source count (e.g. 2+, 3+)
+  if (minSources) {
+    const min = parseInt(minSources, 10);
+    if (!isNaN(min)) {
+      filtered = filtered.filter(a => (a.sourceCount || 1) >= min);
+    }
+  }
 
   if (topic && topic !== 'All') {
-    filtered = filtered.filter(a => a.topic.toLowerCase() === topic.toLowerCase());
+    filtered = filtered.filter(a => (a.topic || '').toLowerCase() === topic.toLowerCase());
   }
+
   if (source && source !== 'All') {
-    filtered = filtered.filter(a => a.sourceId === source || a.sourceName.toLowerCase().includes(source.toLowerCase()));
+    filtered = filtered.filter(a => a.sourceId === source || (a.sourceName || '').toLowerCase().includes(source.toLowerCase()));
   }
+
   if (risk && risk !== 'All') {
     filtered = filtered.filter(a => (a.aiRiskLevel || a.initialRisk) === risk);
   }
+
   if (q) {
     const query = q.toLowerCase();
-    filtered = filtered.filter(a => a.title.toLowerCase().includes(query) || (a.summary && a.summary.toLowerCase().includes(query)));
+    filtered = filtered.filter(a => {
+      const matchTitle = (a.title || '').toLowerCase().includes(query);
+      const matchSummary = (a.summary || '').toLowerCase().includes(query);
+      const matchKeywords = Array.isArray(a.matchedKeywords) && a.matchedKeywords.some(k => k.toLowerCase().includes(query));
+      return matchTitle || matchSummary || matchKeywords;
+    });
   }
 
   const max = parseInt(limit, 10) || 100;
@@ -1013,6 +1420,27 @@ function calculateMonitorAnalytics(monitor) {
   let alertCount = (latestAnalysis?.activeAlerts || []).length;
   if (isSpike) alertCount++;
 
+  // 8. Multi-Source Corroboration & Political Category Breakdown
+  let multiSourceCount = 0;
+  let dualSourceCount = 0;
+  let singleSourceCount = 0;
+  matched.forEach(a => {
+    const tier = a.corroborationTier || ((a.sourceCount || 1) >= 3 ? 'MULTI_SOURCE' : (a.sourceCount === 2 ? 'DUAL_SOURCE' : 'SINGLE_SOURCE'));
+    if (tier === 'MULTI_SOURCE') multiSourceCount++;
+    else if (tier === 'DUAL_SOURCE') dualSourceCount++;
+    else singleSourceCount++;
+  });
+
+  const politicalDistribution = {};
+  for (const [key, val] of Object.entries(POLITICAL_TAXONOMY)) {
+    politicalDistribution[key] = {
+      label: val.label,
+      icon: val.icon,
+      color: val.color,
+      count: matched.filter(a => a.politicalCategory === key).length
+    };
+  }
+
   return {
     monitorId: monitor ? monitor.id : 'all',
     monitorName,
@@ -1023,6 +1451,10 @@ function calculateMonitorAnalytics(monitor) {
     isSpike,
     spikeAlert,
     alertCount,
+    multiSourceCount,
+    dualSourceCount,
+    singleSourceCount,
+    politicalDistribution,
     sentimentOverview,
     sourceDistribution,
     mentionTrends: intervals,
@@ -1169,7 +1601,7 @@ app.post('/api/topics/scan', async (req, res) => {
   if (apiKey && apiKey.length > 10 && allTopicArticles.length > 0) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      const modelNames = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
       const articlePayload = allTopicArticles.map((a, i) => ({
         index: i + 1, title: a.title, source: a.sourceName, date: a.pubDate, summary: a.summary
       }));
@@ -1342,6 +1774,19 @@ Return ONLY raw JSON. No markdown fences.`;
   });
 });
 
+// Immediately categorize and corroborate cached articles
+if (Array.isArray(articles) && articles.length > 0) {
+  articles.forEach(a => {
+    if (!a.politicalCategory || !a.matchedKeywords) {
+      const cls = classifyPoliticalArticle(a.title, a.summary);
+      Object.assign(a, cls);
+    }
+  });
+  calculateMultiSourceCorroboration(articles);
+  writeJson(ARTICLES_FILE, articles);
+  console.log(`[STARTUP] Enriched ${articles.length} cached articles with political taxonomy and multi-source corroboration.`);
+}
+
 // Startup pipeline: Ingest feeds and immediately run live Gemini synthesis!
 (async () => {
   try {
@@ -1353,10 +1798,60 @@ Return ONLY raw JSON. No markdown fences.`;
   }
 })();
 
+// ===============================================================
+// AUTOMATED 1-HOUR PERIODIC DATA SCRAPING & SYNTHESIS ENGINE
+// ===============================================================
+const SCRAPE_INTERVAL_HOURS = parseFloat(process.env.SCRAPE_INTERVAL_HOURS) || 1;
+const SCRAPE_INTERVAL_MS = SCRAPE_INTERVAL_HOURS * 60 * 60 * 1000; // 1 hour = 3,600,000 ms
+
+let lastScrapeTimestamp = Date.now();
+let nextScrapeTimestamp = Date.now() + SCRAPE_INTERVAL_MS;
+let isScrapingInProgress = false;
+
+async function executeAutomatedHourlyScrape() {
+  if (isScrapingInProgress) {
+    console.log('[AUTO-SCRAPER] Previous scrape still in progress, skipping duplicate cycle...');
+    return;
+  }
+
+  isScrapingInProgress = true;
+  lastScrapeTimestamp = Date.now();
+  nextScrapeTimestamp = Date.now() + SCRAPE_INTERVAL_MS;
+
+  console.log(`\n================================================================`);
+  console.log(`[AUTO-SCRAPER] ⏰ Executing automated hourly media scrape (${new Date().toLocaleTimeString('en-GB', { timeZone: 'Africa/Nairobi' })} EAT)...`);
+  console.log(`[AUTO-SCRAPER] Ingesting Nation Africa, The Standard, Capital FM, KBC, and Politics Radar...`);
+  console.log(`================================================================`);
+
+  try {
+    const result = await runIngestionPipeline();
+    console.log(`[AUTO-SCRAPER] Ingestion complete: +${result.addedCount} new stories. Total cached: ${result.total}.`);
+
+    // Run updated Gemini Early-Warning synthesis on the new dataset
+    try {
+      console.log(`[AUTO-SCRAPER] Synthesizing updated early-warning indicators with Gemini...`);
+      await runGeminiAnalysis();
+      console.log(`[AUTO-SCRAPER] ✅ Automated hourly intelligence synthesis completed successfully!`);
+    } catch (aiErr) {
+      console.warn(`[AUTO-SCRAPER] Intelligence synthesis notice:`, aiErr.message);
+    }
+  } catch (err) {
+    console.error(`[AUTO-SCRAPER] Error during automated hourly scrape:`, err.message);
+  } finally {
+    isScrapingInProgress = false;
+    const nextDate = new Date(nextScrapeTimestamp).toLocaleTimeString('en-GB', { timeZone: 'Africa/Nairobi' });
+    console.log(`[AUTO-SCRAPER] Next scheduled scrape at: ${nextDate} EAT (${SCRAPE_INTERVAL_HOURS}h interval).\n`);
+  }
+}
+
+// Start recurring 1-hour interval timer
+const autoScraperTimer = setInterval(executeAutomatedHourlyScrape, SCRAPE_INTERVAL_MS);
+
 app.listen(PORT, () => {
   console.log(`================================================================`);
   console.log(`🇰🇪 KENYA MEDIA INTELLIGENCE - AI EARLY WARNING SYSTEM`);
   console.log(`Server running at http://localhost:${PORT}`);
   console.log(`Scans: Daily Nation, The Standard, Capital FM, KBC, Radar`);
+  console.log(`⏱️ Automated scraping interval: Every ${SCRAPE_INTERVAL_HOURS} hour(s)`);
   console.log(`================================================================`);
 });
