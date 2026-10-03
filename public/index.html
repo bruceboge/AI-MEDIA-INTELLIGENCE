@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kenya Media Radar | AI Early-Warning System for Public Issues & Elections</title>
-  <meta name="description" content="Real-time media intelligence and AI early-warning system monitoring Kenyan national press (Nation Africa, The Standard, Capital FM, KBC) for emerging political tension, elections, and public unrest.">
+  <title>Kenya Media Radar | AI Early-Warning Intelligence System</title>
+  <meta name="description" content="State-of-the-art real-time media intelligence and AI early-warning system monitoring Kenyan national press (Nation Africa, The Standard, Capital FM, KBC) for emerging political tension, elections, and public unrest.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="dark-theme">
-  <!-- Top Background Ambient Glow -->
+  <!-- Top Background Ambient Glow Lights -->
   <div class="ambient-glow ambient-glow-1"></div>
   <div class="ambient-glow ambient-glow-2"></div>
+  <div class="ambient-glow ambient-glow-3"></div>
 
   <!-- Header Navigation -->
   <header class="app-header">
@@ -25,10 +26,10 @@
       <div>
         <div class="brand-title-wrap">
           <h1 class="brand-title">KENYA MEDIA RADAR</h1>
-          <span class="badge badge-accent">AI EARLY-WARNING</span>
+          <span class="badge badge-accent">AI INTELLIGENCE</span>
           <span class="badge badge-pulse" id="system-status-badge">LIVE MONITORING</span>
         </div>
-        <p class="brand-subtitle">Media Intelligence & Conflict Early-Warning System • Nairobi, Kenya</p>
+        <p class="brand-subtitle">Conflict Early-Warning & Media Surveillance • Nairobi, Kenya</p>
       </div>
     </div>
 
@@ -37,65 +38,75 @@
         <span class="clock-icon">🕒</span>
         <span id="eat-time">--:--:-- EAT</span>
         <span class="clock-divider">|</span>
-        <span id="last-sync-label">Awaiting Scan</span>
+        <span id="last-sync-label">Sync: Live</span>
       </div>
     </div>
 
     <div class="header-right">
+      <!-- AI Engine Status Indicator (No API key on frontend) -->
+      <div class="ai-engine-pill" id="ai-engine-status" title="Google Gemini 2.5 Flash Neural Engine Online">
+        <span class="ai-engine-pulse"></span>
+        <span class="ai-engine-icon">🧠</span>
+        <span class="ai-engine-label" id="ai-model-label">Gemini 2.5 Flash</span>
+        <span class="ai-engine-status-tag">ACTIVE</span>
+      </div>
+
+      <!-- Feeds Manager Button -->
       <button class="btn btn-secondary" id="btn-open-feeds" title="Manage Kenya Media RSS Feeds">
         <span>🌐 Feeds</span>
         <span class="pill-counter" id="active-feeds-pill">5</span>
       </button>
 
-      <button class="btn btn-secondary" id="btn-open-key" title="Configure Google Gemini API Key">
-        <span id="key-icon">🔑</span>
-        <span id="key-status-text">Gemini API</span>
-      </button>
-
-      <button class="btn btn-scan" id="btn-scan-feeds" title="Scan Nation Africa and Kenyan Media RSS Feeds">
+      <!-- Scan Live Feeds Button -->
+      <button class="btn btn-scan" id="btn-scan-feeds" title="Scan Nation Africa, The Standard, Capital FM, and KBC RSS Feeds">
         <span class="btn-icon">⚡</span>
         <span class="btn-text">Scan Live Feeds</span>
       </button>
 
+      <!-- Run AI Analysis Button -->
       <button class="btn btn-primary" id="btn-run-analysis" title="Execute Gemini LLM Early-Warning Synthesis">
-        <span class="btn-icon">🧠</span>
+        <span class="btn-icon">✨</span>
         <span class="btn-text">Run AI Analysis</span>
       </button>
     </div>
   </header>
 
-  <!-- Live Ticker Banner -->
+  <!-- Live Breaking Ticker Banner -->
   <div class="ticker-banner">
     <div class="ticker-label">
-      <span class="live-dot"></span> RADAR STREAM:
+      <span class="live-dot"></span> LIVE RADAR STREAM:
     </div>
-    <div class="ticker-marquee" id="ticker-content">
-      Scanning Nation Africa, The Standard, Capital FM, KBC News, and national political aggregators...
+    <div class="ticker-marquee-wrap">
+      <div class="ticker-marquee" id="ticker-content">
+        Scanning Nation Africa, The Standard, Capital FM, KBC News, and national political aggregators...
+      </div>
     </div>
+    <div class="ticker-pause-hint" title="Hover ticker to pause stream">⏸️ Hover to Pause</div>
   </div>
 
-  <!-- Topic Radar Search Bar -->
-  <div class="topic-radar-bar">
+  <!-- Interactive Topic Radar Search Bar -->
+  <section class="topic-radar-bar">
     <div class="topic-radar-inner">
       <div class="topic-radar-input-wrap">
         <span class="topic-radar-icon">🎯</span>
-        <input type="text" id="topic-radar-input" placeholder="Type any topic to scan Kenya media (e.g. healthcare, corruption, land disputes, education, Gen Z)..." />
+        <input type="text" id="topic-radar-input" placeholder="Type any topic to analyze Kenyan media (e.g. healthcare, corruption, land disputes, education, Gen Z, taxes)..." />
         <button class="btn btn-scan topic-radar-btn" id="btn-topic-scan">
           <span>🔍</span> Scan Topic
         </button>
       </div>
       <div class="active-topics-row" id="active-topics-row">
-        <span class="active-topics-label">Presets:</span>
+        <span class="active-topics-label">Quick Scan:</span>
         <span class="topic-tag active-tag" data-topic="politics">🗳️ Politics</span>
         <span class="topic-tag active-tag" data-topic="elections">🇰🇪 Elections</span>
         <span class="topic-tag" data-topic="healthcare">🏥 Healthcare</span>
         <span class="topic-tag" data-topic="corruption">⚖️ Corruption</span>
         <span class="topic-tag" data-topic="economy">📈 Economy</span>
         <span class="topic-tag" data-topic="Gen Z">🔥 Gen Z</span>
+        <span class="topic-tag" data-topic="taxation">💰 Taxation</span>
         <span class="topic-tag" data-topic="land disputes">🗺️ Land Disputes</span>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- Sector & Entity Monitor Selector Bar (Feature 2) -->
   <section class="monitors-bar">
@@ -132,6 +143,7 @@
 
     <!-- KPI Metric Cards Ribbon (Feature 1: Dashboard) -->
     <section class="kpi-ribbon">
+      <!-- Mentions Card -->
       <div class="kpi-card" id="kpi-mentions-card">
         <div class="kpi-header">
           <span class="kpi-title">Total Mentions</span>
@@ -144,7 +156,8 @@
         <div class="kpi-footer-note" id="kpi-volume-rate">24h Monitored Media</div>
       </div>
 
-      <div class="kpi-card">
+      <!-- Trending Narratives Card -->
+      <div class="kpi-card" id="kpi-narratives-card">
         <div class="kpi-header">
           <span class="kpi-title">Trending Narratives</span>
           <span class="kpi-icon">🧭</span>
@@ -156,7 +169,8 @@
         <div class="kpi-footer-note">Origin & Patient Zero Tracking</div>
       </div>
 
-      <div class="kpi-card">
+      <!-- Active Alerts Card -->
+      <div class="kpi-card" id="kpi-alerts-card">
         <div class="kpi-header">
           <span class="kpi-title">Alert Count</span>
           <span class="kpi-icon">🚨</span>
@@ -171,25 +185,25 @@
       <!-- Sentiment Overview Card (Feature 1) -->
       <div class="kpi-card sentiment-kpi-card" id="kpi-sentiment-card">
         <div class="kpi-header">
-          <span class="kpi-title">Sentiment Overview</span>
+          <span class="kpi-title">Sentiment Spectrum</span>
           <span class="kpi-icon">🎭</span>
         </div>
-        <div class="sentiment-stacked-bar">
-          <div class="sentiment-segment seg-pos" id="sent-pos-bar" style="width: 25%" title="Positive"></div>
-          <div class="sentiment-segment seg-neut" id="sent-neut-bar" style="width: 40%" title="Neutral"></div>
-          <div class="sentiment-segment seg-neg" id="sent-neg-bar" style="width: 20%" title="Negative"></div>
-          <div class="sentiment-segment seg-heat" id="sent-heat-bar" style="width: 15%" title="Heated/Conflict"></div>
+        <div class="sentiment-stacked-bar" id="sentiment-bar-tooltip-wrap">
+          <div class="sentiment-segment seg-pos" id="sent-pos-bar" style="width: 25%" title="Positive: 25%"></div>
+          <div class="sentiment-segment seg-neut" id="sent-neut-bar" style="width: 40%" title="Neutral: 40%"></div>
+          <div class="sentiment-segment seg-neg" id="sent-neg-bar" style="width: 20%" title="Negative: 20%"></div>
+          <div class="sentiment-segment seg-heat" id="sent-heat-bar" style="width: 15%" title="Heated/Conflict: 15%"></div>
         </div>
         <div class="sentiment-legend">
-          <span class="sent-tag pos">● Pos <span id="sent-pos-val">25%</span></span>
-          <span class="sent-tag neut">● Neut <span id="sent-neut-val">40%</span></span>
-          <span class="sent-tag neg">● Neg <span id="sent-neg-val">20%</span></span>
-          <span class="sent-tag heat">● Heated <span id="sent-heat-val">15%</span></span>
+          <span class="sent-tag pos" data-sent="pos">● Pos <span id="sent-pos-val">25%</span></span>
+          <span class="sent-tag neut" data-sent="neut">● Neut <span id="sent-neut-val">40%</span></span>
+          <span class="sent-tag neg" data-sent="neg">● Neg <span id="sent-neg-val">20%</span></span>
+          <span class="sent-tag heat" data-sent="heat">● Heated <span id="sent-heat-val">15%</span></span>
         </div>
       </div>
 
-      <!-- National Tension Index KPI -->
-      <div class="kpi-card tension-kpi" id="kpi-tension-card">
+      <!-- National Tension Index KPI Card -->
+      <div class="kpi-card tension-kpi" id="kpi-tension-card" title="Click to view full executive situational briefing">
         <div class="kpi-header">
           <span class="kpi-title">National Tension Index</span>
           <span class="kpi-tag" id="threat-level-badge">CALCULATING</span>
@@ -206,6 +220,7 @@
 
     <!-- Telemetry Bar: Mention Trends (24h) & Source Distribution (Feature 1) -->
     <section class="telemetry-bar">
+      <!-- Mention Trends -->
       <div class="telemetry-box mention-trends-box">
         <div class="telemetry-header">
           <span class="telemetry-title">📈 Mention Trends (Last 24 Hours)</span>
@@ -216,6 +231,7 @@
         </div>
       </div>
 
+      <!-- Source Distribution -->
       <div class="telemetry-box source-dist-box">
         <div class="telemetry-header">
           <span class="telemetry-title">📰 Source Distribution</span>
@@ -239,14 +255,14 @@
           </div>
 
           <div class="panel-actions">
-            <button class="icon-btn" id="btn-refresh-stream" title="Refresh Feed List">🔄</button>
-            <button class="icon-btn" id="btn-select-all" title="Select Top Articles for AI">☑️ AI Batch</button>
+            <button class="icon-btn" id="btn-refresh-stream" title="Refresh Stream from Storage">🔄 Refresh</button>
+            <button class="icon-btn" id="btn-select-all" title="Select Top Articles for AI Batch">☑️ AI Batch</button>
           </div>
         </div>
 
         <!-- Filter Controls -->
         <div class="stream-controls">
-          <!-- Search -->
+          <!-- Search Input -->
           <div class="search-input-wrap">
             <span class="search-icon">🔍</span>
             <input type="text" id="stream-search" placeholder="Search Kenya politics, Ruto, Raila, IEBC, protests, taxes..." />
@@ -263,7 +279,7 @@
             <button class="source-pill" data-source="radar">Politics Radar</button>
           </div>
 
-          <!-- Topic & Risk Selectors -->
+          <!-- Topic & Risk Selectors + Sort -->
           <div class="filter-dropdowns-row">
             <div class="select-group">
               <label for="topic-select">Topic Filter:</label>
@@ -285,6 +301,15 @@
                 <option value="HIGH">High / Critical Risk</option>
                 <option value="MEDIUM">Medium Risk</option>
                 <option value="LOW">Low Risk</option>
+              </select>
+            </div>
+
+            <div class="select-group">
+              <label for="sort-select">Sort By:</label>
+              <select id="sort-select">
+                <option value="newest">Newest First</option>
+                <option value="risk">Highest Risk First</option>
+                <option value="source">By Outlet Name</option>
               </select>
             </div>
           </div>
@@ -448,41 +473,16 @@
     </div>
   </main>
 
-  <!-- MODAL: Gemini API Key Setup -->
-  <div class="modal-backdrop" id="modal-key-backdrop">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>🔑 Configure Google Gemini API</h3>
-        <button class="modal-close-btn" id="btn-close-key-modal">✕</button>
-      </div>
-      <div class="modal-body">
-        <p class="modal-desc">
-          Enter your Gemini API Key to enable live cognitive media intelligence, conflict forecasting, and early-warning synthesis.
-        </p>
-        <div class="form-group">
-          <label for="gemini-key-input">Gemini API Key (Google AI Studio):</label>
-          <input type="password" id="gemini-key-input" placeholder="AIzaSy..." autocomplete="off" />
-          <small class="form-help">Keys are stored locally in your environment or session for this hackathon demo.</small>
-        </div>
-        <div class="key-status-display" id="key-test-feedback"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" id="btn-cancel-key">Cancel</button>
-        <button class="btn btn-primary" id="btn-save-key">Save & Connect</button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL: Kenya Media Feeds Manager -->
   <div class="modal-backdrop" id="modal-feeds-backdrop">
     <div class="modal-card modal-wide">
       <div class="modal-header">
-        <h3>🌐 Kenya Media RSS Feeds (Max 5 Testing Prototype)</h3>
+        <h3>🌐 Monitored Kenya Media RSS Feeds</h3>
         <button class="modal-close-btn" id="btn-close-feeds-modal">✕</button>
       </div>
       <div class="modal-body">
         <p class="modal-desc">
-          Currently monitoring up to 5 verified Kenyan news sources covering Politics, 2027 Elections, Governance, and Public Unrest.
+          Active surveillance across verified Kenyan newsrooms. Toggle active monitoring or add custom RSS streams for instant ingestion.
         </p>
         <div class="feeds-list" id="modal-feeds-list">
           <!-- Populated by JS -->
@@ -518,6 +518,8 @@
         <button class="btn btn-primary" id="btn-close-article-footer">Close</button>
       </div>
     </div>
+  </div>
+
   <!-- MODAL: Create Sector / Entity Monitor (Feature 2) -->
   <div class="modal-backdrop" id="modal-monitor-backdrop">
     <div class="modal-card">

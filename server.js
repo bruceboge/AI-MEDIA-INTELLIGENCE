@@ -443,7 +443,7 @@ DO NOT include markdown fences like \`\`\`json. Return ONLY the raw JSON object 
   if (apiKey && apiKey.length > 10) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const modelNames = ['gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
+      const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
       let lastErr = null;
 
       for (const mName of modelNames) {
@@ -695,7 +695,6 @@ app.get('/api/status', (req, res) => {
     articleCount: articles.length,
     activeFeedsCount: feeds.filter(f => f.active).length,
     hasGeminiKey: hasKey,
-    keyPreview: hasKey ? '••••••••' + activeKey.slice(-4) : null,
     hasAnalysis: Boolean(latestAnalysis),
     lastScanTime: articles[0]?.scannedAt || null,
     modelUsed: latestAnalysis?.modelUsed || 'Pending Analysis'
@@ -729,6 +728,24 @@ app.post('/api/feeds', (req, res) => {
 
   writeJson(FEEDS_FILE, feeds);
   res.json({ success: true, feeds });
+});
+
+app.delete('/api/feeds/:id', (req, res) => {
+  const { id } = req.params;
+  feeds = feeds.filter(f => f.id !== id);
+  writeJson(FEEDS_FILE, feeds);
+  res.json({ success: true, feeds });
+});
+
+app.patch('/api/feeds/:id/toggle', (req, res) => {
+  const { id } = req.params;
+  const feed = feeds.find(f => f.id === id);
+  if (feed) {
+    feed.active = !feed.active;
+    writeJson(FEEDS_FILE, feeds);
+    return res.json({ success: true, feed, feeds });
+  }
+  res.status(404).json({ error: 'Feed not found' });
 });
 
 app.post('/api/config/key', (req, res) => {
@@ -1152,7 +1169,7 @@ app.post('/api/topics/scan', async (req, res) => {
   if (apiKey && apiKey.length > 10 && allTopicArticles.length > 0) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const modelNames = ['gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-2.5-flash'];
+      const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
       const articlePayload = allTopicArticles.map((a, i) => ({
         index: i + 1, title: a.title, source: a.sourceName, date: a.pubDate, summary: a.summary
       }));

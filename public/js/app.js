@@ -8,7 +8,9 @@ let currentFilters = {
   source: 'All',
   topic: 'All',
   risk: 'All',
-  search: ''
+  sentiment: 'All',
+  search: '',
+  sort: 'newest'
 };
 
 // Initialize Application
@@ -28,7 +30,6 @@ function initClock() {
   const clockEl = document.getElementById('eat-time');
   function update() {
     const now = new Date();
-    // Format to EAT (UTC+3)
     const options = {
       timeZone: 'Africa/Nairobi',
       hour12: false,
@@ -36,7 +37,9 @@ function initClock() {
       minute: '2-digit',
       second: '2-digit'
     };
-    clockEl.innerText = now.toLocaleTimeString('en-GB', options) + ' EAT';
+    if (clockEl) {
+      clockEl.innerText = now.toLocaleTimeString('en-GB', options) + ' EAT';
+    }
   }
   update();
   setInterval(update, 1000);
@@ -44,29 +47,45 @@ function initClock() {
 
 // Event Listeners
 function initEventListeners() {
-  // Buttons
-  document.getElementById('btn-scan-feeds').addEventListener('click', triggerScan);
-  document.getElementById('btn-run-analysis').addEventListener('click', triggerAnalysis);
-  document.getElementById('btn-refresh-stream').addEventListener('click', loadArticles);
-  document.getElementById('btn-copy-flash').addEventListener('click', copyFlashAlert);
-  document.getElementById('btn-export-dossier').addEventListener('click', exportDossier);
+  // Header Action Buttons
+  document.getElementById('btn-scan-feeds')?.addEventListener('click', triggerScan);
+  document.getElementById('btn-run-analysis')?.addEventListener('click', triggerAnalysis);
+  document.getElementById('btn-refresh-stream')?.addEventListener('click', loadArticles);
+  document.getElementById('btn-copy-flash')?.addEventListener('click', copyFlashAlert);
+  document.getElementById('btn-export-dossier')?.addEventListener('click', exportDossier);
 
-  // Search & Filter
+  // Select All / AI Batch button
+  const btnSelectAll = document.getElementById('btn-select-all');
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener('click', () => {
+      if (allArticles.length === 0) {
+        showToast('No articles loaded. Scan feeds first.', 'warning');
+        return;
+      }
+      showToast(`Selected top ${Math.min(25, allArticles.length)} articles for AI batch analysis. Click "Run AI Analysis" to process.`, 'info');
+    });
+  }
+
+  // Real-Time Search & Clear
   const searchInput = document.getElementById('stream-search');
   const clearSearchBtn = document.getElementById('btn-clear-search');
-  searchInput.addEventListener('input', (e) => {
-    currentFilters.search = e.target.value.trim();
-    clearSearchBtn.style.display = currentFilters.search ? 'block' : 'none';
-    renderArticles();
-  });
-  clearSearchBtn.addEventListener('click', () => {
-    searchInput.value = '';
-    currentFilters.search = '';
-    clearSearchBtn.style.display = 'none';
-    renderArticles();
-  });
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      currentFilters.search = e.target.value.trim();
+      if (clearSearchBtn) clearSearchBtn.style.display = currentFilters.search ? 'block' : 'none';
+      renderArticles();
+    });
+  }
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      currentFilters.search = '';
+      clearSearchBtn.style.display = 'none';
+      renderArticles();
+    });
+  }
 
-  // Source Pills
+  // Source Pills Filtering
   document.querySelectorAll('#source-filter-pills .source-pill').forEach(pill => {
     pill.addEventListener('click', () => {
       document.querySelectorAll('#source-filter-pills .source-pill').forEach(p => p.classList.remove('active'));
@@ -76,18 +95,52 @@ function initEventListeners() {
     });
   });
 
-  // Dropdowns
-  document.getElementById('topic-select').addEventListener('change', (e) => {
+  // Dropdown Filters
+  document.getElementById('topic-select')?.addEventListener('change', (e) => {
     currentFilters.topic = e.target.value;
     renderArticles();
   });
 
-  document.getElementById('risk-select').addEventListener('change', (e) => {
+  document.getElementById('risk-select')?.addEventListener('change', (e) => {
     currentFilters.risk = e.target.value;
     renderArticles();
   });
 
-  // Topic Radar
+  // Sort Selector
+  document.getElementById('sort-select')?.addEventListener('change', (e) => {
+    currentFilters.sort = e.target.value;
+    renderArticles();
+  });
+
+  // Interactive Sentiment Legend Filter
+  document.querySelectorAll('.sentiment-legend .sent-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const sent = tag.dataset.sent;
+      if (currentFilters.sentiment === sent) {
+        currentFilters.sentiment = 'All';
+        tag.style.opacity = '1';
+        showToast('Reset sentiment filter to All', 'info');
+      } else {
+        currentFilters.sentiment = sent;
+        document.querySelectorAll('.sentiment-legend .sent-tag').forEach(t => t.style.opacity = '0.5');
+        tag.style.opacity = '1';
+        showToast(`Filtering for ${sent.toUpperCase()} stories`, 'info');
+      }
+      renderArticles();
+    });
+  });
+
+  // Interactive National Tension Index Card -> Direct tab jump
+  const tensionCard = document.getElementById('kpi-tension-card');
+  if (tensionCard) {
+    tensionCard.addEventListener('click', () => {
+      const execBtn = document.querySelector('#intel-tabs-bar .intel-tab-btn[data-tab="tab-executive"]');
+      if (execBtn) execBtn.click();
+      document.getElementById('intelligence-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // Interactive Topic Radar
   const topicInput = document.getElementById('topic-radar-input');
   const btnTopicScan = document.getElementById('btn-topic-scan');
   
@@ -120,7 +173,10 @@ function initEventListeners() {
       document.querySelectorAll('#intel-tabs-bar .intel-tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       document.querySelectorAll('#intelligence-container .intel-tab-pane').forEach(pane => {
-        pane.style.display = pane.id === targetTab ? 'block' : 'none';
+        const isActive = pane.id === targetTab;
+        pane.style.display = isActive ? 'block' : 'none';
+        if (isActive) pane.classList.add('active');
+        else pane.classList.remove('active');
       });
     });
   });
@@ -131,56 +187,64 @@ function initEventListeners() {
 
 // Modal Handling
 function setupModals() {
-  // Key Modal
-  const keyModal = document.getElementById('modal-key-backdrop');
-  document.getElementById('btn-open-key').addEventListener('click', () => keyModal.classList.add('active'));
-  document.getElementById('btn-close-key-modal').addEventListener('click', () => keyModal.classList.remove('active'));
-  document.getElementById('btn-cancel-key').addEventListener('click', () => keyModal.classList.remove('active'));
-  document.getElementById('btn-save-key').addEventListener('click', saveGeminiKey);
-
   // Feeds Modal
   const feedsModal = document.getElementById('modal-feeds-backdrop');
-  document.getElementById('btn-open-feeds').addEventListener('click', () => {
+  document.getElementById('btn-open-feeds')?.addEventListener('click', () => {
     renderFeedsModal();
-    feedsModal.classList.add('active');
+    feedsModal?.classList.add('active');
   });
-  document.getElementById('btn-close-feeds-modal').addEventListener('click', () => feedsModal.classList.remove('active'));
-  document.getElementById('btn-done-feeds').addEventListener('click', () => feedsModal.classList.remove('active'));
-  document.getElementById('btn-add-feed').addEventListener('click', addNewFeed);
+  document.getElementById('btn-close-feeds-modal')?.addEventListener('click', () => feedsModal?.classList.remove('active'));
+  document.getElementById('btn-done-feeds')?.addEventListener('click', () => feedsModal?.classList.remove('active'));
+  document.getElementById('btn-add-feed')?.addEventListener('click', addNewFeed);
 
-  // Article Modal
+  // Article Deep Dive Modal
   const articleModal = document.getElementById('modal-article-backdrop');
-  document.getElementById('btn-close-article-modal')?.addEventListener('click', () => articleModal.classList.remove('active'));
-  document.getElementById('btn-close-article-footer')?.addEventListener('click', () => articleModal.classList.remove('active'));
+  document.getElementById('btn-close-article-modal')?.addEventListener('click', () => articleModal?.classList.remove('active'));
+  document.getElementById('btn-close-article-footer')?.addEventListener('click', () => articleModal?.classList.remove('active'));
 
   // Create Sector/Entity Monitor Modal
   const monitorModal = document.getElementById('modal-monitor-backdrop');
   const btnOpenCreateMonitor = document.getElementById('btn-open-create-monitor');
-  if (btnOpenCreateMonitor) btnOpenCreateMonitor.addEventListener('click', () => monitorModal.classList.add('active'));
-  document.getElementById('btn-close-monitor-modal')?.addEventListener('click', () => monitorModal.classList.remove('active'));
-  document.getElementById('btn-cancel-monitor')?.addEventListener('click', () => monitorModal.classList.remove('active'));
+  if (btnOpenCreateMonitor) btnOpenCreateMonitor.addEventListener('click', () => monitorModal?.classList.add('active'));
+  document.getElementById('btn-close-monitor-modal')?.addEventListener('click', () => monitorModal?.classList.remove('active'));
+  document.getElementById('btn-cancel-monitor')?.addEventListener('click', () => monitorModal?.classList.remove('active'));
   document.getElementById('btn-save-monitor')?.addEventListener('click', saveNewMonitor);
+
+  // Close modals when clicking backdrop
+  [feedsModal, articleModal, monitorModal].forEach(modal => {
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('active');
+      });
+    }
+  });
+
+  // Close modals on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      [feedsModal, articleModal, monitorModal].forEach(modal => {
+        if (modal) modal.classList.remove('active');
+      });
+    }
+  });
 }
 
-// Load App Status
+// Load App Status (No API key on frontend)
 async function loadStatus() {
   try {
     const res = await fetch('/api/status');
     const data = await res.json();
     
-    // Update API Key Button UI
-    const keyStatusText = document.getElementById('key-status-text');
-    if (data.hasGeminiKey) {
-      keyStatusText.innerText = data.keyPreview || 'Key Connected';
-      keyStatusText.style.color = '#34d399';
-    } else {
-      keyStatusText.innerText = 'Add Gemini Key';
-      keyStatusText.style.color = '#fbbf24';
+    // Update Neural Model Indicator in Header
+    const modelLabel = document.getElementById('ai-model-label');
+    if (modelLabel) {
+      modelLabel.innerText = data.modelUsed ? data.modelUsed.replace('Google ', '') : 'Gemini 2.5 Flash';
     }
 
     if (data.lastScanTime) {
       const timeStr = new Date(data.lastScanTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      document.getElementById('last-sync-label').innerText = `Sync: ${timeStr} EAT`;
+      const syncLabel = document.getElementById('last-sync-label');
+      if (syncLabel) syncLabel.innerText = `Sync: ${timeStr} EAT`;
     }
   } catch (err) {
     console.error('Failed to load status:', err);
@@ -192,31 +256,19 @@ async function loadFeeds() {
   try {
     const res = await fetch('/api/feeds');
     activeFeeds = await res.json();
-    document.getElementById('active-feeds-pill').innerText = activeFeeds.filter(f => f.active).length;
-    renderSourceSummaryBadges();
+    const pill = document.getElementById('active-feeds-pill');
+    if (pill) pill.innerText = activeFeeds.filter(f => f.active).length;
   } catch (err) {
     console.error('Failed to load feeds:', err);
   }
 }
 
-function renderSourceSummaryBadges() {
-  const container = document.getElementById('source-badges-summary');
-  container.innerHTML = activeFeeds.map(f => `
-    <span class="source-dot-pill" style="border-left: 3px solid ${f.color}">${f.name.split(' ')[0]}</span>
-  `).join('');
-}
-
 // Load Ingested Articles
 async function loadArticles() {
-  const streamList = document.getElementById('stream-list');
   try {
     const res = await fetch('/api/articles?limit=150');
     allArticles = await res.json();
     
-    document.getElementById('article-count-val').innerText = allArticles.length;
-    document.getElementById('new-items-badge').innerText = `${allArticles.length} live from Kenya RSS`;
-    
-    computeRealMetricsFromArticles();
     updateTickerMarquee();
     renderArticles();
   } catch (err) {
@@ -225,40 +277,11 @@ async function loadArticles() {
   }
 }
 
-// Compute live metrics strictly from real ingested articles
-function computeRealMetricsFromArticles() {
-  if (!allArticles || allArticles.length === 0) return;
-  
-  // Dynamic dominant topic
-  const topicCounts = {};
-  allArticles.forEach(a => {
-    topicCounts[a.topic] = (topicCounts[a.topic] || 0) + 1;
-  });
-  const sortedTopics = Object.entries(topicCounts).sort((a,b) => b[1] - a[1]);
-  if (sortedTopics.length > 0) {
-    const [topTopic, count] = sortedTopics[0];
-    const pct = Math.round((count / allArticles.length) * 100);
-    document.getElementById('dominant-theme-val').innerText = `${topTopic} (${pct}%)`;
-  }
-
-  // Dynamic real entities found in the live news
-  const candidateActors = ['Ruto', 'Raila', 'Gachagua', 'Uhuru', 'Murkomen', 'Sifuna', 'Kalonzo', 'Kindiki', 'IEBC', 'CJ Koome', 'Wetangula'];
-  const detected = [];
-  candidateActors.forEach(actor => {
-    const count = allArticles.filter(a => a.title.toLowerCase().includes(actor.toLowerCase())).length;
-    if (count > 0) {
-      detected.push(`${actor} (${count})`);
-    }
-  });
-  if (detected.length > 0) {
-    document.getElementById('key-actor-note').innerText = `Live Entities in News: ${detected.slice(0, 4).join(', ')}`;
-  }
-}
-
-// Render Articles with active filters
+// Render Articles with active filters and sorting
 function renderArticles() {
   const streamList = document.getElementById('stream-list');
   const countBadge = document.getElementById('filtered-count-badge');
+  if (!streamList) return;
 
   let filtered = allArticles.filter(art => {
     // Source filter
@@ -276,6 +299,13 @@ function renderArticles() {
     if (currentFilters.risk !== 'All' && effectiveRisk !== currentFilters.risk) {
       return false;
     }
+    // Sentiment filter
+    if (currentFilters.sentiment !== 'All') {
+      const text = `${art.title} ${art.summary}`.toLowerCase();
+      if (currentFilters.sentiment === 'pos' && !text.match(/boost|launch|reform|growth|deal|peace|agreement|recovery/)) return false;
+      if (currentFilters.sentiment === 'neg' && !text.match(/loss|shortage|delay|debt|deficit|flaw|trouble|burden/)) return false;
+      if (currentFilters.sentiment === 'heat' && !text.match(/protest|strike|corruption|clash|scandal|reject|probe|arrest|ultimatum/)) return false;
+    }
     // Search query
     if (currentFilters.search) {
       const q = currentFilters.search.toLowerCase();
@@ -285,14 +315,32 @@ function renderArticles() {
     return true;
   });
 
-  countBadge.innerText = `${filtered.length} of ${allArticles.length} items`;
+  // Apply Sorting
+  if (currentFilters.sort === 'risk') {
+    const riskScore = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
+    filtered.sort((a, b) => {
+      const rA = riskScore[a.aiRiskLevel || a.initialRisk || 'LOW'] || 1;
+      const rB = riskScore[b.aiRiskLevel || b.initialRisk || 'LOW'] || 1;
+      return rB - rA;
+    });
+  } else if (currentFilters.sort === 'source') {
+    filtered.sort((a, b) => (a.sourceName || '').localeCompare(b.sourceName || ''));
+  } else {
+    // Newest first
+    filtered.sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
+  }
+
+  if (countBadge) {
+    countBadge.innerText = `${filtered.length} of ${allArticles.length} items`;
+  }
 
   if (filtered.length === 0) {
     streamList.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">🔎</div>
         <h3>No matching news articles found</h3>
-        <p>Try clearing search terms or changing your source / topic filter.</p>
+        <p>Try clearing your search terms or changing your active outlet/topic filters.</p>
+        <button class="btn btn-outline btn-sm" onclick="resetFilters()">Reset All Filters</button>
       </div>
     `;
     return;
@@ -304,9 +352,9 @@ function renderArticles() {
     const riskClass = risk.toLowerCase();
 
     return `
-      <div class="article-card" onclick="openArticleModal('${art.id}')">
+      <div class="article-card" onclick="openArticleModal('${art.id}')" title="Click to view full analysis and story background">
         <div class="card-top-row">
-          <span class="source-tag" style="background-color: ${art.sourceColor || '#0284c7'}">
+          <span class="source-tag" style="background-color: ${art.sourceColor || '#0284c7'}" onclick="event.stopPropagation(); filterBySource('${escapeHtml(art.sourceName)}')">
             ${art.sourceName}
           </span>
           <span class="card-time">${timeFormatted}</span>
@@ -314,7 +362,7 @@ function renderArticles() {
         <h4 class="article-title">${escapeHtml(art.title)}</h4>
         <p class="article-summary">${escapeHtml(art.summary || '')}</p>
         <div class="card-bottom-row">
-          <span class="topic-chip">${art.topic}</span>
+          <span class="topic-chip" onclick="event.stopPropagation(); filterByTopic('${escapeHtml(art.topic)}')">${art.topic}</span>
           <span class="risk-pill ${riskClass}">
             ${risk === 'HIGH' ? '⚠️ HIGH RISK' : risk === 'MEDIUM' ? '⚡ ELEVATED' : '✓ LOW RISK'}
           </span>
@@ -324,11 +372,75 @@ function renderArticles() {
   }).join('');
 }
 
-// Ticker Update
+// Quick filter helper by Source
+function filterBySource(sourceName) {
+  const pills = document.querySelectorAll('#source-filter-pills .source-pill');
+  let matched = false;
+  pills.forEach(p => {
+    if (p.dataset.source !== 'All' && sourceName.toLowerCase().includes(p.dataset.source.toLowerCase())) {
+      p.click();
+      matched = true;
+    }
+  });
+  if (!matched) {
+    currentFilters.source = sourceName;
+    renderArticles();
+  }
+  showToast(`Filtered stream for: ${sourceName}`, 'info');
+}
+
+// Quick filter helper by Topic
+function filterByTopic(topicName) {
+  const topicSelect = document.getElementById('topic-select');
+  if (topicSelect) {
+    let matchedOption = Array.from(topicSelect.options).find(o => o.value.toLowerCase() === topicName.toLowerCase());
+    if (matchedOption) {
+      topicSelect.value = matchedOption.value;
+      currentFilters.topic = matchedOption.value;
+      renderArticles();
+      showToast(`Filtered topic: ${topicName}`, 'info');
+      return;
+    }
+  }
+  triggerTopicScan(topicName);
+}
+
+// Reset all stream filters
+function resetFilters() {
+  currentFilters = {
+    source: 'All',
+    topic: 'All',
+    risk: 'All',
+    sentiment: 'All',
+    search: '',
+    sort: 'newest'
+  };
+  const searchInput = document.getElementById('stream-search');
+  if (searchInput) searchInput.value = '';
+  const clearSearchBtn = document.getElementById('btn-clear-search');
+  if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+
+  document.querySelectorAll('#source-filter-pills .source-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.source === 'All');
+  });
+  document.querySelectorAll('.sentiment-legend .sent-tag').forEach(t => t.style.opacity = '1');
+
+  const topicSelect = document.getElementById('topic-select');
+  if (topicSelect) topicSelect.value = 'All';
+  const riskSelect = document.getElementById('risk-select');
+  if (riskSelect) riskSelect.value = 'All';
+  const sortSelect = document.getElementById('sort-select');
+  if (sortSelect) sortSelect.value = 'newest';
+
+  renderArticles();
+  showToast('All filters have been reset.', 'info');
+}
+
+// Ticker Update with clickable headlines
 function updateTickerMarquee() {
   const ticker = document.getElementById('ticker-content');
-  if (allArticles.length > 0) {
-    const headlines = allArticles.slice(0, 8).map(a => `[${a.sourceName.split(' ')[0]}] ${a.title}`).join('  •  ');
+  if (ticker && allArticles.length > 0) {
+    const headlines = allArticles.slice(0, 10).map(a => `[${a.sourceName.split(' ')[0]}] ${a.title}`).join('   •   ');
     ticker.innerText = headlines;
   }
 }
@@ -336,11 +448,13 @@ function updateTickerMarquee() {
 // Trigger Live RSS Ingestion Scan
 async function triggerScan() {
   const btn = document.getElementById('btn-scan-feeds');
-  const originalHtml = btn.innerHTML;
-  btn.innerHTML = `<span>⏳</span><span>Scanning RSS...</span>`;
-  btn.disabled = true;
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = `<span>⏳</span><span>Scanning Feeds...</span>`;
+    btn.disabled = true;
+  }
 
-  showToast('Initiating real data ingestion from Kenyan newsrooms...', 'info');
+  showToast('Ingesting real-time feeds from Kenyan newsrooms...', 'info');
 
   try {
     const res = await fetch('/api/scan', { method: 'POST' });
@@ -349,6 +463,10 @@ async function triggerScan() {
       showToast(`Scan complete: ${data.addedCount} new articles ingested! Total: ${data.totalArticles}`, 'success');
       await loadArticles();
       await loadStatus();
+      if (data.report) {
+        currentAnalysis = data.report;
+        renderAnalysis(data.report);
+      }
     } else {
       showToast(data.error || 'Scan error occurred.', 'error');
     }
@@ -356,19 +474,23 @@ async function triggerScan() {
     console.error('Scan error:', err);
     showToast('Failed to connect to scan service.', 'error');
   } finally {
-    btn.innerHTML = originalHtml;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+    }
   }
 }
 
 // Trigger Gemini AI Early-Warning Analysis
 async function triggerAnalysis() {
   const btn = document.getElementById('btn-run-analysis');
-  const originalHtml = btn.innerHTML;
-  btn.innerHTML = `<span>🧠</span><span>Gemini Synthesizing...</span>`;
-  btn.disabled = true;
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = `<span>✨</span><span>Synthesizing Intelligence...</span>`;
+    btn.disabled = true;
+  }
 
-  showToast('Gemini LLM analyzing media reporting for early-warning indicators & tension scores...', 'info');
+  showToast('Gemini LLM synthesizing tension indicators & conflict forecasting...', 'info');
 
   try {
     const res = await fetch('/api/analyze', {
@@ -381,7 +503,8 @@ async function triggerAnalysis() {
       currentAnalysis = data.report;
       renderAnalysis(data.report);
       showToast(`AI Synthesis completed via ${data.report.modelUsed || 'Gemini'}!`, 'success');
-      await loadArticles(); // Refresh with new AI risk tags
+      await loadArticles();
+      await selectMonitor(currentMonitorId);
     } else {
       showToast(data.error || 'Analysis failed.', 'error');
     }
@@ -389,12 +512,14 @@ async function triggerAnalysis() {
     console.error('Analysis error:', err);
     showToast('Analysis request failed.', 'error');
   } finally {
-    btn.innerHTML = originalHtml;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+    }
   }
 }
 
-// Trigger Topic Radar Scan & Targeted Analysis on User-Defined Topic
+// Trigger Topic Radar Scan
 async function triggerTopicScan(selectedTopic) {
   const topicInput = document.getElementById('topic-radar-input');
   const topic = (selectedTopic || (topicInput ? topicInput.value : '')).trim();
@@ -412,7 +537,6 @@ async function triggerTopicScan(selectedTopic) {
     btn.disabled = true;
   }
 
-  // Update live ticker marquee
   const tickerEl = document.getElementById('ticker-content');
   if (tickerEl) {
     tickerEl.innerText = `[TARGET RADAR] Filtering Kenyan news feeds for "${topic}" and synthesizing Gemini early-warning dossier...`;
@@ -432,10 +556,8 @@ async function triggerTopicScan(selectedTopic) {
       currentAnalysis = data.report;
       renderAnalysis(data.report);
 
-      // Re-fetch articles so newly fetched items are loaded into the store
       await loadArticles();
 
-      // Automatically filter stream search to this topic so the user immediately sees the matching stories
       const searchInput = document.getElementById('stream-search');
       const clearSearchBtn = document.getElementById('btn-clear-search');
       if (searchInput) {
@@ -445,7 +567,6 @@ async function triggerTopicScan(selectedTopic) {
         renderArticles();
       }
 
-      // Add to preset tags row if not already there
       const tagsRow = document.getElementById('active-topics-row');
       if (tagsRow) {
         let existingTag = tagsRow.querySelector(`.topic-tag[data-topic="${CSS.escape(topic)}"]`);
@@ -492,7 +613,7 @@ async function loadLatestAnalysis() {
       renderAnalysis(data);
     }
   } catch (err) {
-    console.log('No prior analysis cached, ready for first run.');
+    console.log('Ready for live analysis run.');
   }
 }
 
@@ -500,73 +621,66 @@ async function loadLatestAnalysis() {
 function renderAnalysis(report) {
   // Update KPI Ribbon
   const tensionScore = report.nationalTensionIndex || 60;
-  document.getElementById('tension-score-val').innerText = tensionScore;
+  const tensionValEl = document.getElementById('tension-score-val');
+  if (tensionValEl) tensionValEl.innerText = tensionScore;
   
   const threatBadge = document.getElementById('threat-level-badge');
   const tensionFill = document.getElementById('tension-meter-fill');
   const tensionDesc = document.getElementById('tension-desc');
   
-  tensionFill.style.width = `${tensionScore}%`;
+  if (tensionFill) tensionFill.style.width = `${tensionScore}%`;
   
   if (tensionScore >= 75) {
-    threatBadge.innerText = 'HIGH TENSION';
-    threatBadge.className = 'kpi-tag badge-danger';
-    tensionFill.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
-    tensionDesc.innerText = 'High Risk of Escalation';
+    if (threatBadge) {
+      threatBadge.innerText = 'HIGH TENSION';
+      threatBadge.className = 'kpi-tag badge-danger';
+    }
+    if (tensionFill) tensionFill.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
+    if (tensionDesc) tensionDesc.innerText = 'High Risk of Escalation';
   } else if (tensionScore >= 55) {
-    threatBadge.innerText = 'ELEVATED';
-    threatBadge.className = 'kpi-tag badge-warning';
-    tensionFill.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
-    tensionDesc.innerText = 'Heated Political Contest';
+    if (threatBadge) {
+      threatBadge.innerText = 'ELEVATED';
+      threatBadge.className = 'kpi-tag badge-warning';
+    }
+    if (tensionFill) tensionFill.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
+    if (tensionDesc) tensionDesc.innerText = 'Heated Political Contest';
   } else {
-    threatBadge.innerText = 'MODERATE';
-    threatBadge.className = 'kpi-tag badge-success';
-    tensionFill.style.background = 'linear-gradient(90deg, #10b981, #059669)';
-    tensionDesc.innerText = 'Normal Discourse';
+    if (threatBadge) {
+      threatBadge.innerText = 'MODERATE';
+      threatBadge.className = 'kpi-tag badge-success';
+    }
+    if (tensionFill) tensionFill.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+    if (tensionDesc) tensionDesc.innerText = 'Normal Discourse';
   }
-
-  // Active Flashpoints count
-  const flashpoints = report.regionalFlashpoints || [];
-  const alertRegions = flashpoints.filter(r => r.status === 'ALERT' || r.status === 'WATCH');
-  document.getElementById('flashpoints-count-val').innerText = alertRegions.length;
-  if (alertRegions[0]) {
-    document.getElementById('top-flashpoint-label').innerText = `${alertRegions[0].region} (${alertRegions[0].status})`;
-  }
-
-  // Dominant Theme
-  if (report.userTopic || report.topicTitle) {
-    document.getElementById('dominant-theme-val').innerText = report.userTopic || report.topicTitle;
-  } else if (report.topEmergingIssues && report.topEmergingIssues[0]) {
-    document.getElementById('dominant-theme-val').innerText = report.topEmergingIssues[0].category || 'Politics';
-  }
-
-  // Dynamic model attribution
-  document.getElementById('threat-trend-note').innerText = `AI Engine: ${report.modelUsed || 'Google Gemini 2.5 Flash'}`;
 
   // Timestamp badge
   const time = report.analyzedAt ? new Date(report.analyzedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live';
   const topicTag = report.userTopic ? `[Topic: ${report.userTopic}] ` : '';
-  document.getElementById('report-timestamp-badge').innerText = `${topicTag}Synthesized at ${time} EAT • ${report.modelUsed || 'Gemini'}`;
+  const timestampBadge = document.getElementById('report-timestamp-badge');
+  if (timestampBadge) {
+    timestampBadge.innerText = `${topicTag}Synthesized at ${time} EAT • ${report.modelUsed || 'Gemini'}`;
+  }
 
   // Flash Alert Card
-  const flashAlertCard = document.getElementById('flash-alert-box');
   const flashText = document.getElementById('flash-alert-text');
   const flashBadge = document.getElementById('flash-severity-badge');
 
-  flashText.innerText = report.flashAlertText || 'Early warning surveillance active across Kenyan media channels.';
-  flashBadge.innerText = report.overallThreatLevel || 'MONITORED';
+  if (flashText) flashText.innerText = report.flashAlertText || 'Early warning surveillance active across Kenyan media channels.';
+  if (flashBadge) flashBadge.innerText = report.overallThreatLevel || 'MONITORED';
 
   // Executive Summary
   const execBox = document.getElementById('exec-summary-text');
-  const briefingTitle = execBox.previousElementSibling ? execBox.previousElementSibling.querySelector('h3') : null;
-  if (briefingTitle) {
-    briefingTitle.innerText = report.userTopic ? `Executive Situational Briefing: ${report.userTopic}` : 'Executive Situational Briefing';
+  if (execBox) {
+    const briefingTitle = execBox.previousElementSibling ? execBox.previousElementSibling.querySelector('h3') : null;
+    if (briefingTitle) {
+      briefingTitle.innerText = report.userTopic ? `Executive Situational Briefing: ${report.userTopic}` : 'Executive Situational Briefing';
+    }
+    execBox.innerHTML = report.executiveSummary ? escapeHtml(report.executiveSummary).replace(/\n\n/g, '<br><br>') : 'Analysis completed.';
   }
-  execBox.innerHTML = report.executiveSummary ? escapeHtml(report.executiveSummary).replace(/\n\n/g, '<br><br>') : 'Analysis completed.';
 
   // Top Emerging Issues
   const issuesContainer = document.getElementById('emerging-issues-list');
-  if (report.topEmergingIssues && report.topEmergingIssues.length > 0) {
+  if (issuesContainer && report.topEmergingIssues && report.topEmergingIssues.length > 0) {
     issuesContainer.innerHTML = report.topEmergingIssues.map(issue => `
       <div class="issue-card">
         <div class="issue-card-top">
@@ -589,7 +703,7 @@ function renderAnalysis(report) {
 
   // Regional Flashpoints
   const regionalContainer = document.getElementById('regional-flashpoints-list');
-  if (report.regionalFlashpoints && report.regionalFlashpoints.length > 0) {
+  if (regionalContainer && report.regionalFlashpoints && report.regionalFlashpoints.length > 0) {
     regionalContainer.innerHTML = report.regionalFlashpoints.map(reg => `
       <div class="region-card">
         <div class="region-header">
@@ -605,7 +719,7 @@ function renderAnalysis(report) {
 
   // Key Actors Under Watch
   const actorsContainer = document.getElementById('actors-list');
-  if (report.keyActorsUnderWatch && report.keyActorsUnderWatch.length > 0) {
+  if (actorsContainer && report.keyActorsUnderWatch && report.keyActorsUnderWatch.length > 0) {
     actorsContainer.innerHTML = report.keyActorsUnderWatch.map(actor => `
       <div class="actor-card">
         <div class="actor-name">
@@ -621,17 +735,10 @@ function renderAnalysis(report) {
   const narratives = report.narratives || [];
   const claims = report.spreadingClaims || [];
   const alerts = report.activeAlerts || [];
-  const contradictionsCount = claims.filter(c => c.hasContradiction).length;
 
-  // Update KPI Ribbon counters
   const narrEl = document.getElementById('kpi-narratives-count');
   if (narrEl) narrEl.innerText = narratives.length;
-  const claimsEl = document.getElementById('kpi-claims-count');
-  if (claimsEl) claimsEl.innerText = claims.length;
-  const contEl = document.getElementById('kpi-contradictions-count');
-  if (contEl) contEl.innerText = contradictionsCount;
 
-  // Update Tab Badges
   const bNarr = document.getElementById('tab-badge-narratives');
   if (bNarr) bNarr.innerText = narratives.length;
   const bClaims = document.getElementById('tab-badge-claims');
@@ -639,7 +746,6 @@ function renderAnalysis(report) {
   const bAlerts = document.getElementById('tab-badge-alerts');
   if (bAlerts) bAlerts.innerText = alerts.length;
 
-  // Render panes
   renderNarratives(narratives);
   renderClaims(claims);
   renderAlerts(alerts);
@@ -679,7 +785,6 @@ function renderNarratives(narratives) {
         <h3 class="narrative-title">${escapeHtml(n.title)}</h3>
         <p class="narrative-summary">${escapeHtml(n.summary || '')}</p>
 
-        <!-- Feature 3: Explicit Narrative Metrics Grid -->
         <div class="narrative-metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 8px; font-size: 0.78rem;">
           <div>📊 <strong>Mention Count:</strong> <span class="text-accent" style="font-weight: 700;">${n.mentionCount || n.articleCount || 1} articles</span></div>
           <div>📈 <strong>Growth Rate:</strong> <span class="${velClass}" style="padding: 1px 6px; border-radius: 4px; font-weight: 700;">${escapeHtml(n.growthRate || n.velocity || '+45% Steady')}</span></div>
@@ -689,7 +794,7 @@ function renderNarratives(narratives) {
         <div class="narrative-footer">
           <span><strong>${outlets.length}</strong> Sources Reporting:</span>
           <div class="outlets-chips">
-            ${outlets.map(o => `<span class="outlet-chip">${escapeHtml(o)}</span>`).join('')}
+            ${outlets.map(o => `<span class="outlet-chip" style="cursor: pointer;" onclick="filterBySource('${escapeHtml(o)}')">${escapeHtml(o)}</span>`).join('')}
           </div>
         </div>
       </div>
@@ -763,7 +868,7 @@ function renderClaims(claims) {
   }).join('');
 }
 
-// Render Strategic Alerts
+// Render Strategic Alerts with Copy Action
 function renderAlerts(alerts) {
   const container = document.getElementById('alerts-list');
   if (!container) return;
@@ -779,7 +884,7 @@ function renderAlerts(alerts) {
     return;
   }
 
-  container.innerHTML = alerts.map(a => {
+  container.innerHTML = alerts.map((a, idx) => {
     const sev = (a.severity || 'WATCH').toLowerCase();
     const sevClass = sev === 'critical' ? 'critical' : sev === 'high' ? 'high' : 'watch';
 
@@ -793,7 +898,12 @@ function renderAlerts(alerts) {
         <p class="alert-desc">${escapeHtml(a.description)}</p>
         ${a.actionableAdvisory ? `
           <div class="advisory-box">
-            <div class="advisory-label">💡 Recommended Stakeholder Advisory:</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span class="advisory-label">💡 Recommended Stakeholder Advisory:</span>
+              <button class="btn btn-xs btn-outline" style="font-size: 0.7rem; padding: 2px 8px;" onclick="copyTextToClipboard('${escapeHtml(a.actionableAdvisory)}', 'Advisory copied!')">
+                📋 Copy
+              </button>
+            </div>
             ${escapeHtml(a.actionableAdvisory)}
           </div>
         ` : ''}
@@ -802,7 +912,17 @@ function renderAlerts(alerts) {
   }).join('');
 }
 
-// Copy Executive Flash Alert
+// Copy Text Helper
+function copyTextToClipboard(text, successMsg = 'Copied to clipboard!') {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast(successMsg, 'success'))
+      .catch(() => fallbackCopy(text, successMsg));
+  } else {
+    fallbackCopy(text, successMsg);
+  }
+}
+
+// Copy Executive Flash Alert with fallback
 function copyFlashAlert() {
   if (!currentAnalysis || !currentAnalysis.flashAlertText) {
     showToast('No flash alert generated yet. Run AI Analysis first.', 'warning');
@@ -811,11 +931,23 @@ function copyFlashAlert() {
 
   const alertContent = `🇰🇪 KENYA MEDIA RADAR - EARLY WARNING ALERT\nTimestamp: ${new Date().toLocaleString('en-GB', { timeZone: 'Africa/Nairobi' })} EAT\nThreat Level: ${currentAnalysis.overallThreatLevel}\nNational Tension Index: ${currentAnalysis.nationalTensionIndex}/100\n\n${currentAnalysis.flashAlertText}\n\nSource: Kenya AI Early-Warning Intelligence Platform`;
 
-  navigator.clipboard.writeText(alertContent).then(() => {
-    showToast('Executive Flash Alert copied to clipboard!', 'success');
-  }).catch(() => {
+  copyTextToClipboard(alertContent, 'Executive Flash Alert copied to clipboard!');
+}
+
+function fallbackCopy(text, successMsg = 'Copied to clipboard!') {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(successMsg, 'success');
+  } catch (e) {
     showToast('Could not copy to clipboard.', 'error');
-  });
+  }
 }
 
 // Export Full Intelligence Dossier
@@ -870,36 +1002,47 @@ function openArticleModal(id) {
   if (!art) return;
 
   const modal = document.getElementById('modal-article-backdrop');
-  document.getElementById('modal-article-title').innerText = art.title;
-  document.getElementById('modal-article-link').href = art.link;
-
+  const titleEl = document.getElementById('modal-article-title');
+  const linkEl = document.getElementById('modal-article-link');
   const body = document.getElementById('modal-article-body');
+
+  if (titleEl) titleEl.innerText = art.title;
+  if (linkEl) linkEl.href = art.link;
+
   const risk = art.aiRiskLevel || art.initialRisk || 'LOW';
 
-  body.innerHTML = `
-    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-      <span class="source-tag" style="background-color: ${art.sourceColor || '#0284c7'}">${art.sourceName}</span>
-      <span class="topic-chip">${art.topic}</span>
-      <span class="risk-pill ${risk.toLowerCase()}">${risk} RISK</span>
-      <span class="card-time" style="margin-left: auto;">${new Date(art.pubDate).toLocaleString()}</span>
-    </div>
-    <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); line-height: 1.5; color: #cbd5e1;">
-      <strong>Excerpt / Summary:</strong>
-      <p style="margin-top: 6px;">${escapeHtml(art.summary)}</p>
-    </div>
-    ${art.aiKeyTrigger ? `
-      <div style="margin-top: 12px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; padding: 10px 14px; border-radius: 0 6px 6px 0; color: #fca5a5; font-size: 0.85rem;">
-        <strong>Early-Warning Detection Signal:</strong> ${escapeHtml(art.aiKeyTrigger)}
+  if (body) {
+    body.innerHTML = `
+      <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;">
+        <span class="source-tag" style="background-color: ${art.sourceColor || '#0284c7'}">${art.sourceName}</span>
+        <span class="topic-chip">${art.topic}</span>
+        <span class="risk-pill ${risk.toLowerCase()}">${risk} RISK</span>
+        <span class="card-time" style="margin-left: auto;">${new Date(art.pubDate).toLocaleString('en-GB', { timeZone: 'Africa/Nairobi' })} EAT</span>
       </div>
-    ` : ''}
-  `;
+      <div style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 8px; border: 1px solid var(--border-subtle); line-height: 1.6; color: #cbd5e1; font-size: 0.86rem;">
+        <strong>Story Excerpt / Summary:</strong>
+        <p style="margin-top: 8px;">${escapeHtml(art.summary)}</p>
+      </div>
+      ${art.aiKeyTrigger ? `
+        <div style="margin-top: 14px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; padding: 12px 16px; border-radius: 0 8px 8px 0; color: #fca5a5; font-size: 0.84rem;">
+          <strong>Early-Warning Detection Signal:</strong> ${escapeHtml(art.aiKeyTrigger)}
+        </div>
+      ` : ''}
+      <div style="margin-top: 14px; display: flex; gap: 8px;">
+        <button class="btn btn-outline btn-sm" onclick="filterByTopic('${escapeHtml(art.topic)}')">🎯 Focus Topic: ${escapeHtml(art.topic)}</button>
+        <button class="btn btn-outline btn-sm" onclick="copyTextToClipboard('${escapeHtml(art.title)}', 'Headline copied!')">📋 Copy Title</button>
+      </div>
+    `;
+  }
 
-  modal.classList.add('active');
+  modal?.classList.add('active');
 }
 
-// Feeds Modal Rendering
+// Feeds Modal Rendering with Toggle and Delete
 function renderFeedsModal() {
   const list = document.getElementById('modal-feeds-list');
+  if (!list) return;
+
   list.innerHTML = activeFeeds.map(f => `
     <div class="feed-row-item">
       <div class="feed-row-left">
@@ -909,17 +1052,60 @@ function renderFeedsModal() {
           <div class="feed-row-url">${escapeHtml(f.url)}</div>
         </div>
       </div>
-      <div>
-        <span class="badge ${f.active ? 'badge-success' : 'badge-danger'}">${f.active ? 'ACTIVE' : 'PAUSED'}</span>
+      <div class="feed-row-actions" style="display: flex; gap: 8px; align-items: center;">
+        <button class="badge ${f.active ? 'badge-success' : 'badge-danger'}" style="cursor: pointer; border: none; font-size: 0.72rem; padding: 3px 8px;" onclick="toggleFeed('${f.id}')" title="Click to toggle active monitoring">
+          ${f.active ? 'ACTIVE' : 'PAUSED'}
+        </button>
+        <button class="btn btn-outline" style="padding: 2px 7px; font-size: 0.72rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.3); border-radius: 4px;" onclick="deleteFeed('${f.id}')" title="Delete Feed">
+          ✕
+        </button>
       </div>
     </div>
   `).join('');
+}
+
+// Toggle Feed Active Status
+async function toggleFeed(feedId) {
+  try {
+    const res = await fetch(`/api/feeds/${feedId}/toggle`, { method: 'PATCH' });
+    const data = await res.json();
+    if (data.success) {
+      activeFeeds = data.feeds;
+      renderFeedsModal();
+      const pill = document.getElementById('active-feeds-pill');
+      if (pill) pill.innerText = activeFeeds.filter(f => f.active).length;
+      showToast(`Feed status updated: ${data.feed.name} is now ${data.feed.active ? 'ACTIVE' : 'PAUSED'}`, 'info');
+    }
+  } catch (err) {
+    showToast('Failed to toggle feed.', 'error');
+  }
+}
+
+// Delete Feed
+async function deleteFeed(feedId) {
+  const feed = activeFeeds.find(f => f.id === feedId);
+  if (!confirm(`Remove "${feed?.name || 'this feed'}" from monitored sources?`)) return;
+  try {
+    const res = await fetch(`/api/feeds/${feedId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      activeFeeds = data.feeds;
+      renderFeedsModal();
+      const pill = document.getElementById('active-feeds-pill');
+      if (pill) pill.innerText = activeFeeds.filter(f => f.active).length;
+      showToast('Feed removed.', 'info');
+    }
+  } catch (err) {
+    showToast('Failed to delete feed.', 'error');
+  }
 }
 
 // Add New Feed
 async function addNewFeed() {
   const nameInput = document.getElementById('new-feed-name');
   const urlInput = document.getElementById('new-feed-url');
+  if (!nameInput || !urlInput) return;
+
   const name = nameInput.value.trim();
   const url = urlInput.value.trim();
 
@@ -938,43 +1124,13 @@ async function addNewFeed() {
     if (data.success) {
       activeFeeds = data.feeds;
       renderFeedsModal();
-      renderSourceSummaryBadges();
+
       nameInput.value = '';
       urlInput.value = '';
       showToast(`Added feed: ${name}`, 'success');
     }
   } catch (err) {
     showToast('Failed to add feed.', 'error');
-  }
-}
-
-// Save Gemini API Key
-async function saveGeminiKey() {
-  const input = document.getElementById('gemini-key-input');
-  const key = input.value.trim();
-  const feedback = document.getElementById('key-test-feedback');
-
-  if (!key) {
-    feedback.innerHTML = '<span style="color: #f87171;">Please enter a key</span>';
-    return;
-  }
-
-  feedback.innerHTML = '<span style="color: #38bdf8;">Saving and validating...</span>';
-
-  try {
-    const res = await fetch('/api/config/key', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey: key })
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast('Gemini API Key configured and stored!', 'success');
-      document.getElementById('modal-key-backdrop').classList.remove('active');
-      await loadStatus();
-    }
-  } catch (err) {
-    feedback.innerHTML = '<span style="color: #f87171;">Failed to save key.</span>';
   }
 }
 
@@ -1008,6 +1164,8 @@ function escapeHtml(str) {
 // Toast Notifications
 function showToast(msg, type = 'info') {
   const container = document.getElementById('toast-container');
+  if (!container) return;
+
   const toast = document.createElement('div');
   toast.className = 'toast';
   
@@ -1023,9 +1181,7 @@ function showToast(msg, type = 'info') {
   }, 4000);
 }
 
-// ========================================================
 // Feature 2: Sector & Entity Monitors Engine
-// ========================================================
 async function loadMonitors() {
   try {
     const res = await fetch('/api/monitors');
@@ -1049,13 +1205,43 @@ function renderMonitorsBar() {
     </button>
   `;
 
+  const defaultIds = ['monitor_energy', 'monitor_genz', 'monitor_taxation', 'monitor_elections'];
+
   const monitorPills = allMonitors.map(m => `
-    <button class="monitor-pill ${currentMonitorId === m.id ? 'active' : ''}" onclick="selectMonitor('${m.id}')">
-      <span>${m.icon || '🎯'}</span> ${escapeHtml(m.name)}
-    </button>
+    <div style="display: inline-flex; align-items: center; position: relative;">
+      <button class="monitor-pill ${currentMonitorId === m.id ? 'active' : ''}" onclick="selectMonitor('${m.id}')">
+        <span>${m.icon || '🎯'}</span> ${escapeHtml(m.name)}
+      </button>
+      ${!defaultIds.includes(m.id) ? `
+        <button onclick="deleteMonitor('${m.id}', event)" title="Delete custom monitor" style="background: none; border: none; color: #94a3b8; font-size: 0.72rem; cursor: pointer; padding: 2px 4px; margin-left: -8px; margin-right: 6px; z-index: 2;">✕</button>
+      ` : ''}
+    </div>
   `).join('');
 
   container.innerHTML = allPill + monitorPills;
+}
+
+// Delete Custom Monitor
+async function deleteMonitor(id, e) {
+  if (e) e.stopPropagation();
+  const monitor = allMonitors.find(m => m.id === id);
+  if (!confirm(`Delete custom monitor "${monitor?.name || ''}"?`)) return;
+
+  try {
+    const res = await fetch(`/api/monitors/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      allMonitors = data.monitors;
+      showToast('Monitor deleted.', 'info');
+      if (currentMonitorId === id) {
+        selectMonitor('all');
+      } else {
+        renderMonitorsBar();
+      }
+    }
+  } catch (err) {
+    showToast('Failed to delete monitor.', 'error');
+  }
 }
 
 // Select Active Monitor & Update Dashboard Analytics (Feature 1, 2, 3, 4)
@@ -1102,9 +1288,12 @@ async function selectMonitor(monitorId) {
     if (spikeBanner) {
       if (data.isSpike && data.spikeAlert) {
         spikeBanner.style.display = 'block';
-        document.getElementById('spike-headline').innerText = data.spikeAlert.headline;
-        document.getElementById('spike-details').innerText = `${data.spikeAlert.description} Growth: ${data.spikeAlert.growth}.`;
-        document.getElementById('spike-ratio-tag').innerText = `${data.spikeRatio}x Baseline`;
+        const hLine = document.getElementById('spike-headline');
+        const sDetails = document.getElementById('spike-details');
+        const sRatio = document.getElementById('spike-ratio-tag');
+        if (hLine) hLine.innerText = data.spikeAlert.headline;
+        if (sDetails) sDetails.innerText = `${data.spikeAlert.description} Growth: ${data.spikeAlert.growth}.`;
+        if (sRatio) sRatio.innerText = `${data.spikeRatio}x Baseline`;
       } else {
         spikeBanner.style.display = 'none';
       }
@@ -1140,7 +1329,7 @@ async function selectMonitor(monitorId) {
       const distCount = document.getElementById('source-dist-count');
       if (distCount) distCount.innerText = `${sources.length} Media Outlets`;
       sourceChipsContainer.innerHTML = sources.map(([name, count]) => `
-        <div class="source-chip-item">
+        <div class="source-chip-item" onclick="filterBySource('${escapeHtml(name)}')">
           <span>📰 ${escapeHtml(name)}</span>
           <span class="source-chip-count">${count}</span>
         </div>
@@ -1157,9 +1346,9 @@ async function selectMonitor(monitorId) {
       trendsChart.innerHTML = data.mentionTrends.map(t => {
         const heightPct = Math.max(10, Math.round((t.count / maxCount) * 100));
         return `
-          <div class="trend-bar-col">
+          <div class="trend-bar-col" title="${t.label}: ${t.count} mentions">
             <span class="trend-bar-val">${t.count}</span>
-            <div class="trend-bar-fill" style="height: ${heightPct}%;" title="${t.label}: ${t.count} mentions"></div>
+            <div class="trend-bar-fill" style="height: ${heightPct}%;"></div>
             <span class="trend-bar-label">${t.label.split(' - ')[0]}</span>
           </div>
         `;
@@ -1207,6 +1396,7 @@ async function saveNewMonitor() {
   const entInput = document.getElementById('new-monitor-entities');
   const baselineInput = document.getElementById('new-monitor-baseline');
 
+  if (!nameInput) return;
   const name = nameInput.value.trim();
   if (!name) {
     showToast('Please enter a monitor name.', 'warning');
@@ -1214,9 +1404,9 @@ async function saveNewMonitor() {
     return;
   }
 
-  const keywords = kwInput.value.split(',').map(s => s.trim()).filter(Boolean);
-  const entities = entInput.value.split(',').map(s => s.trim()).filter(Boolean);
-  const baselinePerDay = parseInt(baselineInput.value, 10) || 15;
+  const keywords = kwInput?.value.split(',').map(s => s.trim()).filter(Boolean) || [];
+  const entities = entInput?.value.split(',').map(s => s.trim()).filter(Boolean) || [];
+  const baselinePerDay = parseInt(baselineInput?.value, 10) || 15;
 
   try {
     const res = await fetch('/api/monitors', {
@@ -1227,10 +1417,10 @@ async function saveNewMonitor() {
     const data = await res.json();
 
     if (data.success) {
-      document.getElementById('modal-monitor-backdrop').classList.remove('active');
+      document.getElementById('modal-monitor-backdrop')?.classList.remove('active');
       nameInput.value = '';
-      kwInput.value = '';
-      entInput.value = '';
+      if (kwInput) kwInput.value = '';
+      if (entInput) entInput.value = '';
       showToast(`Monitor "${name}" created successfully!`, 'success');
       await loadMonitors();
       await selectMonitor(data.monitor.id);
