@@ -17,10 +17,10 @@
     <div class="sidebar-header">
       <div class="brand-logo">
         <svg class="logo-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="28" height="28" rx="8" fill="#2563EB"/>
-          <path d="M7 14C7 10.134 10.134 7 14 7C17.866 7 21 10.134 21 14C21 17.866 17.866 21 14 21" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
-          <circle cx="14" cy="14" r="3" fill="#60A5FA"/>
-          <path d="M14 11V7M17 14H21M14 17V21M11 14H7" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <rect width="28" height="28" rx="2" fill="#112747" stroke="#e4a83b" stroke-width="1.5"/>
+          <path d="M7 14C7 10.134 10.134 7 14 7C17.866 7 21 10.134 21 14C21 17.866 17.866 21 14 21" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="3" fill="#e4a83b"/>
+          <path d="M14 11V7M17 14H21M14 17V21M11 14H7" stroke="#e4a83b" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
         <span class="brand-name">MediWatch</span>
       </div>
@@ -80,47 +80,62 @@
       <!-- Search Input -->
       <div class="topbar-search">
         <span class="search-icon">🔍</span>
-        <input type="text" id="stream-search" placeholder="Search topics, keywords, or entities..." />
+        <input type="text" id="stream-search" placeholder="Search news, topics, or people..." />
         <button class="clear-search-btn" id="btn-clear-search" style="display:none;">✕</button>
       </div>
 
       <div class="topbar-actions">
-        <!-- Live System Clock & Auto-Scrape Interval Indicator -->
-        <div class="timeframe-pill" title="Automated 1-hour background media ingestion active">
+        <!-- Live System Clock & Auto-Sync -->
+        <div class="timeframe-pill" title="System updates automatically every 1 hour">
           <span class="timeframe-icon">🕒</span>
           <span id="eat-time">--:--:-- EAT</span>
           <span class="divider">|</span>
-          <span id="auto-sync-status">Auto-Scrape: 1h</span>
-          <span class="divider">|</span>
-          <span id="last-sync-label">Next: in 59m</span>
+          <span id="last-sync-label">Sync: 1h</span>
+          <span id="auto-sync-status" style="display:none;">Auto-Scrape: 1h</span>
+        </div>
+
+        <!-- Apify 24h Social Posts Pill Container -->
+        <div id="social-radar-pill-wrapper">
+          <div class="timeframe-pill social-radar-btn" id="social-radar-pill" title="Click to view saved posts from 33 Kenya accounts">
+            <span style="color:#e4a83b;font-weight:700;">𝕏 Posts</span>
+            <span class="divider">|</span>
+            <span id="social-pill-count" style="font-size:12px;color:#cbd5e1;">12 saved</span>
+            <span class="divider">|</span>
+            <span id="social-pill-cache" style="font-size:12px;color:#e4a83b;font-weight:600;">24h Saved</span>
+          </div>
         </div>
 
         <!-- 24h Timeframe Filter -->
-        <div class="timeframe-pill" id="timeframe-selector">
+        <div class="timeframe-pill" id="timeframe-selector" title="Filter by timeframe">
           <span class="timeframe-icon">📅</span>
-          <span>Last 24 hours</span>
+          <span>Last 24 Hours</span>
           <span class="chevron">⌄</span>
         </div>
 
-        <!-- Scan & Analysis Quick Triggers -->
-        <button class="action-btn" id="btn-scan-feeds" title="Scan Nation Africa, The Standard, Capital FM, and KBC RSS Feeds">
-          <span>⚡</span> Scan Feeds
+        <!-- Scan & Analysis Action Buttons -->
+        <button class="action-btn" id="btn-scan-feeds" title="Check news websites for new stories">
+          <span>⚡</span> Refresh News
         </button>
 
-        <button class="action-btn primary" id="btn-run-analysis" title="Execute Early-Warning Synthesis">
-          <span>✨</span> Run AI
+        <button class="action-btn primary" id="btn-run-analysis" title="Summarize the news with AI">
+          <span>✨</span> AI Summary
         </button>
 
         <!-- Notification Bell -->
-        <button class="icon-notification-btn" id="btn-top-alerts" title="Active Strategic Alerts">
+        <button class="icon-notification-btn" id="btn-top-alerts" title="Important News Alerts">
           <span class="bell-icon">🔔</span>
           <span class="bell-badge" id="top-alerts-count">3</span>
         </button>
 
+        <!-- User Auth Button -->
+        <button class="action-btn" id="btn-auth-modal" title="User Account" style="border: 1px solid #1d3b63; background: #091628; color: #e4a83b; border-radius: 2px;">
+          <span id="auth-btn-icon">👤</span> <span id="auth-btn-label">Sign In</span>
+        </button>
+
         <!-- Live Radar Status Pill -->
-        <div class="system-status-indicator" title="Continuous Kenya Political Media Intelligence Active">
+        <div class="system-status-indicator" title="Live monitoring active">
           <span class="pulse-dot"></span>
-          <span class="status-text">POLITICAL RADAR</span>
+          <span class="status-text">LIVE</span>
         </div>
       </div>
     </header>
@@ -136,41 +151,83 @@
         <!-- View Header -->
         <div class="view-header">
           <div>
-            <h1 class="view-title">Media Intelligence & Topics Radar</h1>
-            <p class="view-subtitle">Real-time surveillance & AI narrative consensus across Kenya's newsrooms</p>
+            <h1 class="view-title">Kenya News & Media Monitor</h1>
+            <p class="view-subtitle">Live news from Kenya's top newspapers, TV stations, and social media</p>
           </div>
         </div>
 
-        <!-- MAIN TOPICS NAVIGATION: Clear, distinct, separated topic areas -->
+        <!-- DYNAMIC TOPIC INVESTIGATION & REAL-TIME PRE-CLASSIFIER BAR -->
+        <div class="dynamic-investigation-bar" style="background:#0b1a2f; border:1px solid #142945; border-left:3px solid #e4a83b; border-radius:2px; padding:14px 18px; margin-bottom:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="color:#e4a83b; font-weight:800; font-size:14px;">⚡ DYNAMIC INVESTIGATION & PRE-CLASSIFIER</span>
+              <span style="font-size:11px; color:#8fa3bf; background:#112747; padding:2px 8px; border-radius:2px; border:1px solid #1d3b63;">Multi-Source Scraping + AI Synthesis</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button id="btn-clear-investigation" class="action-btn" title="Clear current analysis" style="background:#091628; color:#cbd5e1; border:1px solid #1d3b63; border-radius:2px; padding:5px 12px; font-size:12px; cursor:pointer;">
+                <span>🔄</span> Clear / New Analysis
+              </button>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <div style="flex:2; min-width:280px; position:relative;">
+              <input type="text" id="dynamic-topic-input" placeholder="Search any topic (e.g. Doctors Strike, CBC Funding, SHIF Rollout, Finance Bill)..." style="width:100%; box-sizing:border-box; background:#050d18; border:1px solid #1d3b63; border-radius:2px; padding:10px 14px; color:#ffffff; font-size:13px;" />
+            </div>
+
+            <select id="dynamic-category-select" style="flex:1; min-width:180px; background:#050d18; border:1px solid #1d3b63; border-radius:2px; padding:10px 12px; color:#cbd5e1; font-size:13px;">
+              <option value="all">All National Pillars</option>
+              <option value="politics">🏛️ Politics & Elections</option>
+              <option value="governance">📜 Governance & Policy</option>
+              <option value="corruption">🛡️ Corruption & EACC</option>
+              <option value="health">🏥 Health & Social</option>
+              <option value="education">🎓 Education & CBC</option>
+              <option value="economy">📈 Economy & Finance</option>
+              <option value="security">🚨 Security & Public Order</option>
+              <option value="trends">🌐 Civic Trends</option>
+            </select>
+
+            <button id="btn-dynamic-investigate" class="action-btn primary" style="background:#e4a83b; color:#071324; font-weight:700; border-radius:2px; padding:10px 18px; border:none; cursor:pointer; font-size:13px;">
+              <span>🔍</span> Harvest & Analyze
+            </button>
+          </div>
+
+          <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; color:#8fa3bf;">Custom AI Prompt:</span>
+            <input type="text" id="dynamic-custom-prompt" placeholder="e.g. Focus on economic impact, key political pushback, and regional sentiment..." style="flex:1; background:#050d18; border:1px solid #142945; border-radius:2px; padding:6px 10px; color:#cbd5e1; font-size:12px;" />
+          </div>
+        </div>
+
+        <!-- MAIN TOPICS NAVIGATION: Clear, simple titles -->
         <div class="topic-navigation-bar" id="topic-navigation-bar">
           <button class="topic-nav-tab active" data-topic="general" id="tab-general">
             <span class="tab-icon">🌐</span>
-            <span class="tab-text">Trending Across Media</span>
+            <span class="tab-text">All News</span>
             <span class="tab-count" id="tab-count-general">0</span>
           </button>
           <button class="topic-nav-tab" data-topic="politics" id="tab-politics">
             <span class="tab-icon">🏛️</span>
-            <span class="tab-text">Politics & Governance</span>
+            <span class="tab-text">Politics</span>
             <span class="tab-count" id="tab-count-politics">0</span>
           </button>
           <button class="topic-nav-tab" data-topic="elections" id="tab-elections">
             <span class="tab-icon">🗳️</span>
-            <span class="tab-text">Elections & Campaigns</span>
+            <span class="tab-text">Elections</span>
             <span class="tab-count" id="tab-count-elections">0</span>
           </button>
           <button class="topic-nav-tab" data-topic="parliament" id="tab-parliament">
             <span class="tab-icon">📜</span>
-            <span class="tab-text">Parliament & Legislation</span>
+            <span class="tab-text">Parliament</span>
             <span class="tab-count" id="tab-count-parliament">0</span>
           </button>
           <button class="topic-nav-tab" data-topic="political_conflict" id="tab-political_conflict">
             <span class="tab-icon">⚔️</span>
-            <span class="tab-text">Conflict & Protests</span>
+            <span class="tab-text">Protests & Strikes</span>
             <span class="tab-count" id="tab-count-political_conflict">0</span>
           </button>
           <button class="topic-nav-tab" data-topic="corruption" id="tab-corruption">
             <span class="tab-icon">🛡️</span>
-            <span class="tab-text">Corruption & Graft Watch</span>
+            <span class="tab-text">Corruption Watch</span>
             <span class="tab-count" id="tab-count-corruption">0</span>
           </button>
         </div>
@@ -179,8 +236,8 @@
         <div class="topic-trending-spotlight" id="topic-trending-spotlight">
           <div class="spotlight-top">
             <div class="spotlight-badge-row">
-              <span class="spotlight-badge" id="spotlight-topic-badge">🔥 WHAT'S TRENDING UNDER THIS TOPIC</span>
-              <span class="spotlight-corrob-pill" id="spotlight-outlets-pill">🌟 Reported by 4 Media Outlets</span>
+              <span class="spotlight-badge" id="spotlight-topic-badge">🔥 TOP STORY</span>
+              <span class="spotlight-corrob-pill" id="spotlight-outlets-pill">🌟 Reported by Multiple Outlets</span>
             </div>
             <h2 class="spotlight-headline" id="spotlight-headline">Loading trending development across newsrooms...</h2>
           </div>
@@ -211,25 +268,19 @@
           <div class="kpi-card" id="kpi-mentions-card">
             <div class="kpi-card-header">
               <span class="kpi-icon-pill blue" id="kpi-topic-icon">🌐</span>
-              <span class="kpi-label" id="kpi-topic-label">Topic Mentions</span>
+              <span class="kpi-label" id="kpi-topic-label">Total Stories</span>
             </div>
             <div class="kpi-card-body">
               <div class="kpi-data-col">
                 <div class="kpi-value" id="kpi-total-mentions-val">0</div>
                 <div class="kpi-delta positive" id="kpi-mentions-delta">
-                  <span>Live Stream</span> <span class="delta-sub">verified Kenyan articles</span>
+                  <span>Live Stream</span> <span class="delta-sub">Kenya stories</span>
                 </div>
               </div>
               <div class="kpi-sparkline" id="sparkline-mentions">
                 <svg viewBox="0 0 100 40" class="spark-svg">
-                  <path d="M 0 35 Q 25 30, 45 25 T 75 12 T 100 8" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
-                  <path d="M 0 35 Q 25 30, 45 25 T 75 12 T 100 8 L 100 40 L 0 40 Z" fill="url(#blue-grad)" opacity="0.25"/>
-                  <defs>
-                    <linearGradient id="blue-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#3B82F6"/>
-                      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
-                    </linearGradient>
-                  </defs>
+                  <path d="M 0 35 Q 25 30, 45 25 T 75 12 T 100 8" fill="none" stroke="#e4a83b" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M 0 35 Q 25 30, 45 25 T 75 12 T 100 8 L 100 40 L 0 40 Z" fill="rgba(228, 168, 59, 0.12)"/>
                 </svg>
               </div>
             </div>
@@ -238,26 +289,20 @@
           <!-- Card 2: Multi-Source Corroborated Stories -->
           <div class="kpi-card" id="kpi-sentiment-card">
             <div class="kpi-card-header">
-              <span class="kpi-icon-pill green">🌟</span>
-              <span class="kpi-label">Multi-Source Verified</span>
+              <span class="kpi-icon-pill">🌟</span>
+              <span class="kpi-label">Cross-Checked Stories</span>
             </div>
             <div class="kpi-card-body">
               <div class="kpi-data-col">
                 <div class="kpi-value" id="kpi-multi-source-val">0</div>
                 <div class="kpi-delta positive" id="kpi-multi-source-delta">
-                  <span>3+ Outlets</span> <span class="delta-sub">cross-corroborated</span>
+                  <span>2+ Outlets</span> <span class="delta-sub">verified independently</span>
                 </div>
               </div>
               <div class="kpi-sparkline" id="sparkline-sentiment">
                 <svg viewBox="0 0 100 40" class="spark-svg">
-                  <path d="M 0 32 Q 30 25, 55 20 T 80 14 T 100 8" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/>
-                  <path d="M 0 32 Q 30 25, 55 20 T 80 14 T 100 8 L 100 40 L 0 40 Z" fill="url(#green-grad-kpi)" opacity="0.25"/>
-                  <defs>
-                    <linearGradient id="green-grad-kpi" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#10B981"/>
-                      <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
-                    </linearGradient>
-                  </defs>
+                  <path d="M 0 32 Q 30 25, 55 20 T 80 14 T 100 8" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M 0 32 Q 30 25, 55 20 T 80 14 T 100 8 L 100 40 L 0 40 Z" fill="rgba(255, 255, 255, 0.08)"/>
                 </svg>
               </div>
             </div>
@@ -267,25 +312,19 @@
           <div class="kpi-card" id="kpi-sources-card">
             <div class="kpi-card-header">
               <span class="kpi-icon-pill blue">📰</span>
-              <span class="kpi-label">Active Media Desks</span>
+              <span class="kpi-label">Active News Desks</span>
             </div>
             <div class="kpi-card-body">
               <div class="kpi-data-col">
                 <div class="kpi-value" id="kpi-sources-val">8</div>
                 <div class="kpi-delta positive" id="kpi-sources-delta">
-                  <span>Mainstream Press & Radio</span> <span class="delta-sub">verified Kenyan desks</span>
+                  <span>Newspapers, TV & Radio</span> <span class="delta-sub">monitored</span>
                 </div>
               </div>
               <div class="kpi-sparkline" id="sparkline-sources">
                 <svg viewBox="0 0 100 40" class="spark-svg">
-                  <path d="M 0 34 Q 25 32, 50 25 T 75 22 T 100 14" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round"/>
-                  <path d="M 0 34 Q 25 32, 50 25 T 75 22 T 100 14 L 100 40 L 0 40 Z" fill="url(#indigo-grad)" opacity="0.25"/>
-                  <defs>
-                    <linearGradient id="indigo-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#6366F1"/>
-                      <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
-                    </linearGradient>
-                  </defs>
+                  <path d="M 0 34 Q 25 32, 50 25 T 75 22 T 100 14" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M 0 34 Q 25 32, 50 25 T 75 22 T 100 14 L 100 40 L 0 40 Z" fill="rgba(203, 213, 225, 0.08)"/>
                 </svg>
               </div>
             </div>
@@ -295,7 +334,7 @@
           <div class="kpi-card" id="kpi-alerts-card">
             <div class="kpi-card-header">
               <span class="kpi-icon-pill orange">⚠️</span>
-              <span class="kpi-label">Political Flash Alerts</span>
+              <span class="kpi-label">Important Alerts</span>
             </div>
             <div class="kpi-card-body">
               <div class="kpi-data-col">
@@ -306,14 +345,8 @@
               </div>
               <div class="kpi-sparkline" id="sparkline-alerts">
                 <svg viewBox="0 0 100 40" class="spark-svg">
-                  <path d="M 0 36 Q 30 33, 50 30 T 75 22 T 100 16" fill="none" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
-                  <path d="M 0 36 Q 30 33, 50 30 T 75 22 T 100 16 L 100 40 L 0 40 Z" fill="url(#amber-grad)" opacity="0.25"/>
-                  <defs>
-                    <linearGradient id="amber-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#F59E0B"/>
-                      <stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/>
-                    </linearGradient>
-                  </defs>
+                  <path d="M 0 36 Q 30 33, 50 30 T 75 22 T 100 16" fill="none" stroke="#e4a83b" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M 0 36 Q 30 33, 50 30 T 75 22 T 100 16 L 100 40 L 0 40 Z" fill="rgba(228, 168, 59, 0.12)"/>
                 </svg>
               </div>
             </div>
@@ -326,10 +359,10 @@
           <!-- Column 1: Mention Volume Chart -->
           <div class="card chart-card">
             <div class="card-header">
-              <h3 class="card-title">Mention Volume</h3>
+              <h3 class="card-title">Stories Over Time</h3>
               <div class="chart-legend">
-                <span class="legend-item"><span class="legend-dot blue"></span> Mentions</span>
-                <span class="legend-item"><span class="legend-dot grey"></span> Previous day</span>
+                <span class="legend-item"><span class="legend-dot blue"></span> Today</span>
+                <span class="legend-item"><span class="legend-dot grey"></span> Yesterday</span>
               </div>
             </div>
             <div class="chart-body" id="mention-volume-chart-container">
@@ -340,7 +373,7 @@
           <!-- Column 2: Sentiment Distribution Donut -->
           <div class="card donut-card">
             <div class="card-header">
-              <h3 class="card-title">Sentiment Distribution</h3>
+              <h3 class="card-title">Public Mood</h3>
             </div>
             <div class="donut-card-body">
               <div class="donut-chart-wrap" id="sentiment-donut-wrap">
@@ -348,7 +381,7 @@
               </div>
               <div class="donut-legend" id="sentiment-donut-legend">
                 <div class="donut-legend-row" data-sent="neg">
-                  <span class="dot red"></span>
+                  <span class="dot gold"></span>
                   <span class="label">Negative</span>
                   <span class="pct" id="donut-neg-pct">67%</span>
                 </div>
@@ -358,7 +391,7 @@
                   <span class="pct" id="donut-neut-pct">21%</span>
                 </div>
                 <div class="donut-legend-row" data-sent="pos">
-                  <span class="dot green"></span>
+                  <span class="dot white"></span>
                   <span class="label">Positive</span>
                   <span class="pct" id="donut-pos-pct">12%</span>
                 </div>
@@ -369,7 +402,7 @@
           <!-- Column 3: Top Narratives Card -->
           <div class="card top-narratives-card">
             <div class="card-header">
-              <h3 class="card-title">Top Narratives</h3>
+              <h3 class="card-title">Top Stories</h3>
               <button class="link-btn" onclick="switchView('narratives')">View all →</button>
             </div>
             <div class="top-narratives-list" id="top-narratives-list">
@@ -387,7 +420,7 @@
             <div class="card-header" style="justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
               <div class="header-left-title">
                 <span class="topic-active-indicator-icon" id="topic-stream-icon" style="font-size: 1.15rem;">🌐</span>
-                <h3 class="card-title" id="topic-stream-title">Trending Across Media News Stream</h3>
+                <h3 class="card-title" id="topic-stream-title">Live News Feed</h3>
                 <span class="items-badge" id="filtered-count-badge">0 verified stories</span>
               </div>
               <div style="display: flex; gap: 8px; align-items: center;">
@@ -438,11 +471,11 @@
       <div class="view-pane" id="view-monitors">
         <div class="view-header">
           <div>
-            <h1 class="view-title">Sector & Entity Monitors</h1>
-            <p class="view-subtitle">Track designated corporations, public ministries, and sectors for early anomalies</p>
+            <h1 class="view-title">Topic & Entity Trackers</h1>
+            <p class="view-subtitle">Track specific government agencies, companies, and key issues</p>
           </div>
           <button class="btn btn-primary" onclick="document.getElementById('modal-monitor-backdrop').classList.add('active')">
-            <span>➕</span> Create New Monitor
+            <span>➕</span> Create Tracker
           </button>
         </div>
 
@@ -457,11 +490,11 @@
       <div class="view-pane" id="view-narratives">
         <div class="view-header">
           <div>
-            <h1 class="view-title">🧭 Clustered Narratives & Patient Zero Origins</h1>
-            <p class="view-subtitle">Trace originating outlets, spreading velocities, and affected counties across Kenya</p>
+            <h1 class="view-title">🧭 Trending Stories</h1>
+            <p class="view-subtitle">See how top news stories started and how they are spreading across Kenya</p>
           </div>
           <div class="view-actions">
-            <button class="btn btn-outline" onclick="triggerAnalysis()">✨ Re-cluster AI Narratives</button>
+            <button class="btn btn-outline" onclick="triggerAnalysis()">✨ Refresh Stories</button>
           </div>
         </div>
 
@@ -476,8 +509,8 @@
       <div class="view-pane" id="view-claims">
         <div class="view-header">
           <div>
-            <h1 class="view-title">⚖️ Atomic Claims & Cross-Source Verification Matrix</h1>
-            <p class="view-subtitle">Corroborating citations, official rebuttals, and flagged media contradictions</p>
+            <h1 class="view-title">⚖️ Fact Checks & News Claims</h1>
+            <p class="view-subtitle">Verify statements, check facts, and see official responses</p>
           </div>
         </div>
 
@@ -492,21 +525,21 @@
       <div class="view-pane" id="view-alerts">
         <div class="view-header">
           <div>
-            <h1 class="view-title">🚨 Automated Strategic Early-Warning Alerts</h1>
-            <p class="view-subtitle">Early-warning escalation triggers with actionable stakeholder advisories</p>
+            <h1 class="view-title">🚨 Important News Alerts</h1>
+            <p class="view-subtitle">Urgent warnings, developing stories, and recommended actions</p>
           </div>
-          <button class="btn btn-outline" id="btn-copy-flash">📋 Copy Urgent Dispatch</button>
+          <button class="btn btn-outline" id="btn-copy-flash">📋 Copy Alert Text</button>
         </div>
 
         <!-- Urgent Flash Alert Banner -->
         <div class="flash-alert-card" id="flash-alert-box">
           <div class="flash-alert-header">
             <span class="flash-siren">🚨</span>
-            <span class="flash-title">EARLY-WARNING STAKEHOLDER DISPATCH</span>
+            <span class="flash-title">URGENT NEWS DISPATCH</span>
             <span class="badge badge-danger" id="flash-severity-badge">HIGH ALERT</span>
           </div>
           <p class="flash-body" id="flash-alert-text">
-            Media surveillance active across Kenyan newsrooms.
+            Media monitoring active across Kenyan newsrooms.
           </p>
         </div>
 
@@ -521,18 +554,18 @@
       <div class="view-pane" id="view-sources">
         <div class="view-header">
           <div>
-            <h1 class="view-title">📰 Monitored Kenyan Media Sources</h1>
-            <p class="view-subtitle">Verified newsrooms feeding live RSS articles into the intelligence pipeline</p>
+            <h1 class="view-title">📰 Monitored News Sources</h1>
+            <p class="view-subtitle">All the Kenyan news websites and media channels being tracked</p>
           </div>
           <button class="btn btn-primary" onclick="document.getElementById('modal-feeds-backdrop').classList.add('active')">
-            <span>➕</span> Manage RSS Feeds
+            <span>➕</span> Manage Sources
           </button>
         </div>
 
         <div class="sources-view-content">
           <div class="telemetry-box source-dist-box">
             <div class="telemetry-header">
-              <span class="telemetry-title">Current Article Distribution by Outlet</span>
+              <span class="telemetry-title">Current Stories by Media Outlet</span>
               <span class="telemetry-sub" id="source-dist-count">5 Outlets Active</span>
             </div>
             <div class="source-distribution-chips" id="source-distribution-chips">
@@ -548,11 +581,11 @@
       <div class="view-pane" id="view-reports">
         <div class="view-header">
           <div>
-            <h1 class="view-title">📋 Executive Situational Dossier</h1>
-            <p class="view-subtitle">Complete intelligence briefing on Kenyan political tension and public stability</p>
+            <h1 class="view-title">📋 Executive News Summary</h1>
+            <p class="view-subtitle">A clear briefing and summary of top Kenya developments</p>
           </div>
           <div class="view-actions">
-            <button class="btn btn-outline" id="btn-export-dossier">📥 Export Dossier (.md)</button>
+            <button class="btn btn-outline" id="btn-export-dossier">📥 Export Report (.md)</button>
           </div>
         </div>
 
@@ -670,5 +703,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <script src="/js/app.js"></script>
+  <script src="/js/socialRadar.js"></script>
+  <script src="/js/authModal.js"></script>
+  <script src="/js/dynamicInvestigation.js"></script>
 </body>
 </html>

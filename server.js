@@ -5,6 +5,9 @@ const fs = require('fs');
 const path = require('path');
 const Parser = require('rss-parser');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const apifyService = require('./services/apifyService');
+const classifierService = require('./services/classifierService');
+const supabaseService = require('./services/supabaseService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,7 +29,7 @@ const DEFAULT_FEEDS = [
     url: 'https://nation.africa/kenya/rss.xml',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:nation.africa+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Mainstream Press',
-    color: '#0284c7',
+    color: '#112747',
     active: true
   },
   {
@@ -35,7 +38,7 @@ const DEFAULT_FEEDS = [
     url: 'https://www.standardmedia.co.ke/rss/headlines.php',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:standardmedia.co.ke+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Mainstream Press',
-    color: '#dc2626',
+    color: '#142945',
     active: true
   },
   {
@@ -44,7 +47,7 @@ const DEFAULT_FEEDS = [
     url: 'https://news.google.com/rss/search?q=site:citizen.digital+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:citizen.digital+Kenya+governance&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Broadcast & Digital',
-    color: '#f97316',
+    color: '#1d3b63',
     active: true
   },
   {
@@ -53,7 +56,7 @@ const DEFAULT_FEEDS = [
     url: 'https://www.the-star.co.ke/rss/',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:the-star.co.ke+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Mainstream Press',
-    color: '#e11d48',
+    color: '#0f223d',
     active: true
   },
   {
@@ -62,7 +65,7 @@ const DEFAULT_FEEDS = [
     url: 'https://news.google.com/rss/search?q=site:peopledaily.digital+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:peopledaily.digital+Kenya+governance&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'National Newspaper',
-    color: '#8b5cf6',
+    color: '#112747',
     active: true
   },
   {
@@ -71,7 +74,7 @@ const DEFAULT_FEEDS = [
     url: 'https://www.capitalfm.co.ke/news/feed/',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:capitalfm.co.ke+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Radio & Wire',
-    color: '#ea580c',
+    color: '#142945',
     active: true
   },
   {
@@ -80,7 +83,7 @@ const DEFAULT_FEEDS = [
     url: 'https://www.kbc.co.ke/feed/',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:kbc.co.ke+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'State Broadcaster',
-    color: '#16a34a',
+    color: '#1d3b63',
     active: true
   },
   {
@@ -89,7 +92,7 @@ const DEFAULT_FEEDS = [
     url: 'https://news.google.com/rss/search?q=site:kenyans.co.ke+Kenya+politics&hl=en-KE&gl=KE&ceid=KE:en',
     fallbackUrl: 'https://news.google.com/rss/search?q=site:kenyans.co.ke+Kenya+government&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Digital Native',
-    color: '#2563eb',
+    color: '#0f223d',
     active: true
   },
   {
@@ -98,7 +101,7 @@ const DEFAULT_FEEDS = [
     url: 'https://news.google.com/rss/search?q=Kenya+(%22politics%22+OR+%22government%22+OR+%22governance%22+OR+%22politician%22+OR+%22political+party%22+OR+%22opposition%22)&hl=en-KE&gl=KE&ceid=KE:en',
     fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+politics+government&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Topic Wire - Politics',
-    color: '#3b82f6',
+    color: '#e4a83b',
     active: true
   },
   {
@@ -107,7 +110,7 @@ const DEFAULT_FEEDS = [
     url: 'https://news.google.com/rss/search?q=Kenya+(%22election%22+OR+%22voter+registration%22+OR+%22campaign%22+OR+%22candidate%22+OR+%22nomination%22+OR+%22polling%22+OR+%22ballot%22+OR+%22tallying%22)&hl=en-KE&gl=KE&ceid=KE:en',
     fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+election+IEBC+campaign&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Topic Wire - Elections',
-    color: '#8b5cf6',
+    color: '#cbd5e1',
     active: true
   },
   {
@@ -116,7 +119,7 @@ const DEFAULT_FEEDS = [
     url: 'https://news.google.com/rss/search?q=Kenya+(%22National+Assembly%22+OR+%22Senate%22+OR+%22MP%22+OR+%22senator%22+OR+%22bill%22+OR+%22motion%22+OR+%22committee%22+OR+%22Hansard%22+OR+%22Order+Paper%22)&hl=en-KE&gl=KE&ceid=KE:en',
     fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+Parliament+Senate+bill&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Topic Wire - Parliament',
-    color: '#10b981',
+    color: '#ffffff',
     active: true
   },
   {
@@ -125,7 +128,7 @@ const DEFAULT_FEEDS = [
     url: 'https://news.google.com/rss/search?q=Kenya+(%22dispute%22+OR+%22clash%22+OR+%22protest%22+OR+%22accuses%22+OR+%22allegation%22+OR+%22controversy%22+OR+%22backlash%22+OR+%22deadlock%22+OR+%22boycott%22)&hl=en-KE&gl=KE&ceid=KE:en',
     fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+protest+clash+dispute&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Topic Wire - Conflict',
-    color: '#ef4444',
+    color: '#e4a83b',
     active: true
   },
   {
@@ -134,7 +137,7 @@ const DEFAULT_FEEDS = [
     url: 'https://news.google.com/rss/search?q=Kenya+(%22corruption%22+OR+%22bribery%22+OR+%22fraud%22+OR+%22graft%22+OR+%22EACC%22+OR+%22investigation%22+OR+%22audit%22+OR+%22procurement%22)&hl=en-KE&gl=KE&ceid=KE:en',
     fallbackUrl: 'https://news.google.com/rss/search?q=Kenya+corruption+graft+EACC&hl=en-KE&gl=KE&ceid=KE:en',
     category: 'Topic Wire - Corruption',
-    color: '#f59e0b',
+    color: '#e4a83b',
     active: true
   }
 ];
@@ -210,7 +213,7 @@ const POLITICAL_TAXONOMY = {
     id: 'politics',
     label: 'Politics & Governance',
     icon: '🏛️',
-    color: '#3b82f6',
+    color: '#e4a83b',
     keywords: [
       'politics',
       'government',
@@ -225,7 +228,7 @@ const POLITICAL_TAXONOMY = {
     id: 'elections',
     label: 'Elections & Campaigns',
     icon: '🗳️',
-    color: '#8b5cf6',
+    color: '#cbd5e1',
     keywords: [
       'election',
       'voter registration',
@@ -242,7 +245,7 @@ const POLITICAL_TAXONOMY = {
     id: 'parliament',
     label: 'Parliament & Legislation',
     icon: '📜',
-    color: '#10b981',
+    color: '#ffffff',
     keywords: [
       'National Assembly',
       'Senate',
@@ -259,7 +262,7 @@ const POLITICAL_TAXONOMY = {
     id: 'political_conflict',
     label: 'Political Conflict & Disputes',
     icon: '⚔️',
-    color: '#ef4444',
+    color: '#e4a83b',
     keywords: [
       'dispute',
       'clash',
@@ -276,7 +279,7 @@ const POLITICAL_TAXONOMY = {
     id: 'corruption',
     label: 'Corruption & Graft (EACC)',
     icon: '🛡️',
-    color: '#f59e0b',
+    color: '#e4a83b',
     keywords: [
       'corruption',
       'bribery',
@@ -292,7 +295,7 @@ const POLITICAL_TAXONOMY = {
     id: 'general',
     label: 'Trending Across Media',
     icon: '🌐',
-    color: '#6366f1',
+    color: '#cbd5e1',
     keywords: []
   }
 };
@@ -353,21 +356,21 @@ function normalizeSourceName(rawSource, title, feed) {
   if (!s) s = feed.name;
 
   const lower = s.toLowerCase();
-  if (lower.includes('nation')) return { name: 'Daily Nation', color: '#0284c7' };
-  if (lower.includes('standard')) return { name: 'The Standard', color: '#dc2626' };
-  if (lower.includes('citizen')) return { name: 'Citizen Digital', color: '#f97316' };
-  if (lower.includes('the star') || lower === 'the-star.co.ke' || lower === 'the star') return { name: 'The Star Kenya', color: '#e11d48' };
-  if (lower.includes('people daily')) return { name: 'People Daily', color: '#8b5cf6' };
-  if (lower.includes('capital')) return { name: 'Capital FM', color: '#ea580c' };
-  if (lower.includes('kbc')) return { name: 'KBC News', color: '#16a34a' };
-  if (lower.includes('kenyans')) return { name: 'Kenyans.co.ke', color: '#2563eb' };
-  if (lower.includes('ntv')) return { name: 'NTV Kenya', color: '#0d9488' };
-  if (lower.includes('pulse')) return { name: 'Pulse Live Kenya', color: '#ec4899' };
-  if (lower.includes('bbc')) return { name: 'BBC News Africa', color: '#b91c1c' };
-  if (lower.includes('bloomberg')) return { name: 'Bloomberg', color: '#1d4ed8' };
-  if (lower.includes('reuters')) return { name: 'Reuters', color: '#d97706' };
+  if (lower.includes('nation')) return { name: 'Daily Nation', color: '#112747' };
+  if (lower.includes('standard')) return { name: 'The Standard', color: '#142945' };
+  if (lower.includes('citizen')) return { name: 'Citizen Digital', color: '#1d3b63' };
+  if (lower.includes('the star') || lower === 'the-star.co.ke' || lower === 'the star') return { name: 'The Star Kenya', color: '#0f223d' };
+  if (lower.includes('people daily')) return { name: 'People Daily', color: '#112747' };
+  if (lower.includes('capital')) return { name: 'Capital FM', color: '#142945' };
+  if (lower.includes('kbc')) return { name: 'KBC News', color: '#1d3b63' };
+  if (lower.includes('kenyans')) return { name: 'Kenyans.co.ke', color: '#0f223d' };
+  if (lower.includes('ntv')) return { name: 'NTV Kenya', color: '#112747' };
+  if (lower.includes('pulse')) return { name: 'Pulse Live Kenya', color: '#142945' };
+  if (lower.includes('bbc')) return { name: 'BBC News Africa', color: '#1d3b63' };
+  if (lower.includes('bloomberg')) return { name: 'Bloomberg', color: '#0f223d' };
+  if (lower.includes('reuters')) return { name: 'Reuters', color: '#112747' };
 
-  return { name: s || feed.name, color: feed.color || '#6366f1' };
+  return { name: s || feed.name, color: feed.color || '#112747' };
 }
 
 // ===============================================================
@@ -427,7 +430,7 @@ function classifyPoliticalArticle(title, content) {
       politicalCategory: 'general',
       politicalCategoryLabel: 'Trending Across Media',
       politicalCategoryIcon: '🌐',
-      politicalCategoryColor: '#6366f1',
+      politicalCategoryColor: '#cbd5e1',
       isPolitical: false,
       isSports: true,
       matchedKeywords: isSports ? ['sports'] : ['entertainment'],
@@ -513,7 +516,7 @@ function classifyPoliticalArticle(title, content) {
     id: 'general',
     label: 'Trending Across Media',
     icon: '🌐',
-    color: '#6366f1'
+    color: '#cbd5e1'
   };
 
   const matchedKeywords = matchedKeywordsPerCategory[finalCat] || [];
@@ -599,7 +602,7 @@ function calculateMultiSourceCorroboration(articlesList) {
 
     tokenized.forEach((other, j) => {
       if (i === j) return;
-      
+
       // Calculate token intersection
       const commonTokens = other.tokens.filter(t => current.tokenSet.has(t));
       const sharedEntities = other.entities.filter(e => current.entities.includes(e));
@@ -769,7 +772,7 @@ async function runIngestionPipeline() {
 // AI Analysis Engine using Gemini
 async function runGeminiAnalysis(selectedArticles = null, customApiKey = null) {
   const apiKey = (customApiKey || config.geminiApiKey || process.env.GEMINI_API_KEY || '').trim();
-  
+
   // Articles to evaluate: priority to political/elections/high relevance
   let targetArticles = selectedArticles || articles.slice(0, 25);
   if (targetArticles.length === 0) {
@@ -1142,7 +1145,8 @@ app.get('/api/status', (req, res) => {
     nextScanTime: nextScrapeTimestamp ? new Date(nextScrapeTimestamp).toISOString() : null,
     autoScrapeIntervalHours: SCRAPE_INTERVAL_HOURS,
     autoScrapeActive: true,
-    modelUsed: latestAnalysis?.modelUsed || 'Pending Analysis'
+    modelUsed: latestAnalysis?.modelUsed || 'Pending Analysis',
+    socialRadar: apifyService.getCacheStatus()
   });
 });
 
@@ -1156,6 +1160,215 @@ app.get('/api/scraper/status', (req, res) => {
     minutesUntilNextScrape: Math.max(0, Math.round((nextScrapeTimestamp - Date.now()) / 60000)),
     isScrapingInProgress
   });
+});
+
+// ===============================================================
+// APIFY SOCIAL RADAR (X/TWITTER) 24-HOUR CACHED INTELLIGENCE
+// ===============================================================
+app.get('/api/social/status', (req, res) => {
+  res.json(apifyService.getCacheStatus());
+});
+
+app.get('/api/social/accounts', (req, res) => {
+  res.json(apifyService.getCategorizedAccounts());
+});
+
+app.get('/api/social/posts', (req, res) => {
+  const { category, risk, limit } = req.query;
+  let posts = (apifyService.data && apifyService.data.posts) ? [...apifyService.data.posts] : [];
+  if (category && category !== 'All') {
+    posts = posts.filter(p => p.category === category);
+  }
+  if (risk && risk !== 'All') {
+    posts = posts.filter(p => p.initialRisk === risk);
+  }
+  const max = parseInt(limit, 10) || 50;
+  res.json(posts.slice(0, max));
+});
+
+app.post('/api/social/harvest', async (req, res) => {
+  try {
+    const force = Boolean(req.body && req.body.force);
+    const result = await apifyService.harvestAllAccounts(force);
+    res.json({
+      success: true,
+      message: result.fromCache ? 'Data served from 24-hour cache.' : 'Fresh 24h harvest completed successfully.',
+      fromCache: result.fromCache,
+      postsCount: result.posts ? result.posts.length : 0,
+      status: result.status
+    });
+  } catch (error) {
+    console.error('[API /api/social/harvest] Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/config/apify', (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+    apifyService.setToken(token);
+    res.json({ success: true, message: 'Apify token saved successfully', status: apifyService.getCacheStatus() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===============================================================
+// SUPABASE AUTHENTICATION & SESSION MANAGEMENT
+// ===============================================================
+app.get('/api/auth/status', (req, res) => {
+  res.json(supabaseService.getStatus());
+});
+
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password, organizationName } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    const result = await supabaseService.signUp(email, password, organizationName);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/signin', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    const result = await supabaseService.signIn(email, password);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===============================================================
+// NATIONAL PILLARS & DYNAMIC TOPIC HARVESTING / CLASSIFICATION
+// ===============================================================
+app.get('/api/analysis/pillars', (req, res) => {
+  res.json(classifierService.NATIONAL_PILLARS);
+});
+
+app.post('/api/analysis/clear', async (req, res) => {
+  try {
+    const { sessionId } = req.body || {};
+    const result = await supabaseService.clearAnalysisSession(sessionId);
+    res.json({ success: true, message: 'Active analysis session cleared. Ready for fresh query.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/analysis/search', async (req, res) => {
+  try {
+    const { query, category, userId, customPrompt } = req.body || {};
+    if (!query || !query.trim()) {
+      return res.status(400).json({ error: 'Search topic / keyword is required' });
+    }
+
+    const cleanQuery = query.trim();
+    const selectedCategory = category || 'all';
+
+    console.log(`[DYNAMIC SEARCH] Initiating investigation on: "${cleanQuery}" (Category: ${selectedCategory})`);
+
+    // 1. Create or bind user analysis session in Supabase / Local
+    const sessionRes = await supabaseService.createAnalysisSession(userId, cleanQuery, selectedCategory);
+    const sessionId = sessionRes.session ? sessionRes.session.id : 'sess_' + Date.now();
+
+    // 2. Dynamically fetch matching news articles via Google News RSS & Kenyan outlets
+    const dynamicSearchUrl = `https://news.google.com/rss/search?q=Kenya+${encodeURIComponent(cleanQuery)}&hl=en-KE&gl=KE&ceid=KE:en`;
+    const searchFeed = {
+      id: 'dynamic_search',
+      name: `Radar: "${cleanQuery}"`,
+      url: dynamicSearchUrl,
+      category: 'Dynamic Query'
+    };
+
+    let harvestedNews = [];
+    try {
+      harvestedNews = await ingestFeed(searchFeed);
+    } catch (feedErr) {
+      console.warn(`[SEARCH] Dynamic news fetch warning: ${feedErr.message}`);
+    }
+
+    // Also match against cached articles
+    const matchingCachedArticles = articles.filter(a => {
+      const text = `${a.title} ${a.summary}`.toLowerCase();
+      return text.includes(cleanQuery.toLowerCase());
+    });
+
+    const combinedNews = [...harvestedNews, ...matchingCachedArticles];
+    const seenLinks = new Set();
+    const uniqueNews = [];
+    for (const item of combinedNews) {
+      if (item.link && !seenLinks.has(item.link)) {
+        seenLinks.add(item.link);
+        uniqueNews.push(item);
+      }
+    }
+
+    // 3. Harvest or filter Social Posts from 33+ monitored figures
+    let socialItems = [];
+    if (apifyService.data && Array.isArray(apifyService.data.posts)) {
+      socialItems = apifyService.data.posts.filter(p => {
+        const text = `${p.text} ${p.authorName} ${p.handle}`.toLowerCase();
+        return text.includes(cleanQuery.toLowerCase()) || 
+               (selectedCategory !== 'all' && p.category === selectedCategory);
+      });
+    }
+
+    // 4. Run through Fast Pre-Classification Model
+    const allCandidateItems = [...uniqueNews, ...socialItems];
+    const { categorized, counts } = classifierService.classifyBatch(allCandidateItems);
+
+    // Save harvested content linked to this session
+    await supabaseService.saveSessionContent(sessionId, allCandidateItems);
+
+    // 5. Deep LLM Synthesis with Gemini on the target category
+    const targetSet = selectedCategory !== 'all' && categorized[selectedCategory] && categorized[selectedCategory].length > 0
+      ? categorized[selectedCategory]
+      : (allCandidateItems.length > 0 ? allCandidateItems.slice(0, 25) : articles.slice(0, 20));
+
+    let report = null;
+    try {
+      report = await runGeminiAnalysis(targetSet);
+      if (report) {
+        report.topicQuery = cleanQuery;
+        report.selectedCategory = selectedCategory;
+        if (customPrompt) {
+          report.customAnalysisNotes = `User Custom Prompt: ${customPrompt}`;
+        }
+        await supabaseService.saveIntelligenceReport(sessionId, report);
+      }
+    } catch (llmErr) {
+      console.warn('[SEARCH] LLM synthesis fallback:', llmErr.message);
+      report = generateDynamicAnalysisFromArticles(targetSet, llmErr.message);
+    }
+
+    res.json({
+      success: true,
+      sessionId,
+      query: cleanQuery,
+      category: selectedCategory,
+      totalHarvested: allCandidateItems.length,
+      newsCount: uniqueNews.length,
+      socialCount: socialItems.length,
+      categoryCounts: counts,
+      categorized,
+      items: targetSet,
+      report
+    });
+  } catch (err) {
+    console.error('[API /api/analysis/search] Error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/feeds', (req, res) => {
@@ -1178,7 +1391,7 @@ app.post('/api/feeds', (req, res) => {
       url,
       fallbackUrl: fallbackUrl || url,
       category: category || 'Custom Feed',
-      color: color || '#6366f1',
+      color: color || '#112747',
       active: active !== false
     });
   }
@@ -1252,7 +1465,7 @@ function computeTopicTrending(topicKey, articlesList) {
     id: 'general',
     label: 'Trending Across Media',
     icon: '🌐',
-    color: '#6366f1'
+    color: '#cbd5e1'
   };
 
   if (!matched || matched.length === 0) {
@@ -1325,8 +1538,8 @@ function computeTopicTrending(topicKey, articlesList) {
     summary: topCluster.lead.summary || `Trending development covered across Kenyan newsrooms regarding "${topCluster.lead.title}".`,
     reportedByCount: outletCount,
     outlets: outletsArray,
-    corroborationBadge: outletCount >= 3 
-      ? `🌟 Reported by ${outletCount} Media Outlets` 
+    corroborationBadge: outletCount >= 3
+      ? `🌟 Reported by ${outletCount} Media Outlets`
       : (outletCount === 2 ? `⚡ Reported by 2 Media Outlets` : `📰 Reported by 1 Outlet`),
     corroborationTier: outletCount >= 3 ? 'MULTI_SOURCE' : (outletCount === 2 ? 'DUAL_SOURCE' : 'SINGLE_SOURCE'),
     articleCount: topCluster.articles.length,
@@ -1373,7 +1586,12 @@ app.get('/api/political-taxonomy', (req, res) => {
 });
 
 app.get('/api/articles', (req, res) => {
-  let filtered = [...articles];
+  let pool = [...articles];
+  // Merge 24-hour cached social intelligence posts
+  if (apifyService.data && Array.isArray(apifyService.data.posts) && apifyService.data.posts.length > 0) {
+    pool = [...pool, ...apifyService.data.posts];
+  }
+  let filtered = pool;
   const { topic, source, risk, q, limit, politicalCategory, sourceTier, minSources } = req.query;
 
   // Filter by user political category (politics, elections, parliament, political_conflict, corruption)
@@ -1484,7 +1702,7 @@ function calculateMonitorAnalytics(monitor) {
     return !isNaN(pub) && (now - pub) <= dayMs;
   }).length;
 
-  const last24hCount = monitor?.currentDayMentions 
+  const last24hCount = monitor?.currentDayMentions
     ? Math.max(monitor.currentDayMentions, rawLast24h)
     : (rawLast24h || Math.min(matched.length, Math.max(1, Math.round(matched.length * 0.45))));
 
@@ -1593,11 +1811,11 @@ function calculateMonitorAnalytics(monitor) {
   // 6. Narrative Detection for this monitor
   const extractedLocations = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Lamu', 'Meru', 'Kiambu', 'Mt Kenya', 'Rift Valley'];
   const narratives = [];
-  
+
   if (latestAnalysis && Array.isArray(latestAnalysis.narratives)) {
     latestAnalysis.narratives.forEach(n => {
       const text = `${n.title} ${n.domain} ${n.summary}`.toLowerCase();
-      const isRel = !monitor || monitor.id === 'all' || 
+      const isRel = !monitor || monitor.id === 'all' ||
         (monitor.keywords || []).some(k => text.includes(k.toLowerCase())) ||
         (monitor.entities || []).some(e => text.includes(e.toLowerCase()));
 
@@ -1622,7 +1840,7 @@ function calculateMonitorAnalytics(monitor) {
       domain: monitor?.name || 'General',
       originOutlet: matched[0]?.sourceName || 'Kenyan Press',
       mentionCount: totalMentions,
-      growthRate: isSpike ? `+${Math.round((spikeRatio-1)*100)}% (Surging)` : '+45% (Steady)',
+      growthRate: isSpike ? `+${Math.round((spikeRatio - 1) * 100)}% (Surging)` : '+45% (Steady)',
       sources: Object.keys(sourceDistribution).slice(0, 4),
       locations: locs.length > 0 ? locs : ['National / Regional Outlets']
     });
@@ -1685,8 +1903,8 @@ app.post('/api/monitors', (req, res) => {
     return res.status(400).json({ error: 'Monitor name is required.' });
   }
 
-  const kwList = Array.isArray(keywords) 
-    ? keywords 
+  const kwList = Array.isArray(keywords)
+    ? keywords
     : (typeof keywords === 'string' ? keywords.split(',').map(s => s.trim()).filter(Boolean) : []);
 
   const entList = Array.isArray(entities)
@@ -1774,7 +1992,7 @@ app.post('/api/topics/scan', async (req, res) => {
           pubDate,
           sourceId: 'topic_radar',
           sourceName: `Topic: ${topic}`,
-          sourceColor: '#8b5cf6',
+          sourceColor: '#112747',
           topic: topic,
           relevanceScore: 5,
           initialRisk: estimateEarlyRisk(cleanTitle, content),
@@ -2044,6 +2262,19 @@ async function executeAutomatedHourlyScrape() {
       console.log(`[AUTO-SCRAPER] ✅ Automated hourly intelligence synthesis completed successfully!`);
     } catch (aiErr) {
       console.warn(`[AUTO-SCRAPER] Intelligence synthesis notice:`, aiErr.message);
+    }
+
+    // Apify 24-Hour Social Intelligence Cache Check
+    try {
+      if (!apifyService.isCacheValid()) {
+        console.log(`[AUTO-SCRAPER] 24-hour Apify cache expired. Refreshing Kenyan X intelligence...`);
+        await apifyService.harvestAllAccounts(false);
+      } else {
+        const apifyStatus = apifyService.getCacheStatus();
+        console.log(`[AUTO-SCRAPER] Apify 24h cache valid (${apifyStatus.hoursRemaining}h remaining, ${apifyStatus.totalPosts} posts). Quota preserved.`);
+      }
+    } catch (apifyErr) {
+      console.warn(`[AUTO-SCRAPER] Apify social intelligence notice:`, apifyErr.message);
     }
   } catch (err) {
     console.error(`[AUTO-SCRAPER] Error during automated hourly scrape:`, err.message);

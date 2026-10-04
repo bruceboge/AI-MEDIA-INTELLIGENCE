@@ -1,3 +1,21 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Environment variables
 .env
-node_modules
-data
+.env*.local
+
+# Next.js build output & cache
+.next/
+out/
+
+# Local databases & caches
+data/
+*.sqlite
+*.log
+
+# OS & Editor
+.DS_Store
+Thumbs.db

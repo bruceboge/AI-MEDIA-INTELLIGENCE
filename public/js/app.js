@@ -18,12 +18,12 @@ let currentFilters = {
 };
 
 const TOPIC_METADATA = {
-  general: { label: 'Trending Across Media', icon: '🌐', color: '#6366f1' },
-  politics: { label: 'Politics & Governance', icon: '🏛️', color: '#3b82f6' },
-  elections: { label: 'Elections & Campaigns', icon: '🗳️', color: '#8b5cf6' },
-  parliament: { label: 'Parliament & Legislation', icon: '📜', color: '#10b981' },
-  political_conflict: { label: 'Conflict & Protests', icon: '⚔️', color: '#ef4444' },
-  corruption: { label: 'Corruption & Graft Watch', icon: '🛡️', color: '#f59e0b' }
+  general: { label: 'All News', icon: '🌐', color: '#e4a83b' },
+  politics: { label: 'Politics', icon: '🏛️', color: '#e4a83b' },
+  elections: { label: 'Elections', icon: '🗳️', color: '#cbd5e1' },
+  parliament: { label: 'Parliament', icon: '📜', color: '#ffffff' },
+  political_conflict: { label: 'Protests & Strikes', icon: '⚔️', color: '#e4a83b' },
+  corruption: { label: 'Corruption Watch', icon: '🛡️', color: '#e4a83b' }
 };
 
 // Initialize Application
@@ -229,18 +229,13 @@ async function loadArticles() {
   }
 }
 
-// Get Brand Color for Verified Kenyan Media Outlets
+// Get Brand Color for Verified Kenyan Media Outlets (Harmonized solid palette)
 function getOutletColor(outletName) {
+  const palette = ['#112747', '#142945', '#1d3b63', '#0f223d', '#183359'];
   const name = (outletName || '').toLowerCase();
-  if (name.includes('nation')) return '#0284c7';
-  if (name.includes('standard')) return '#dc2626';
-  if (name.includes('citizen')) return '#f97316';
-  if (name.includes('the star') || name.includes('star')) return '#e11d48';
-  if (name.includes('people daily') || name.includes('people')) return '#8b5cf6';
-  if (name.includes('capital')) return '#ea580c';
-  if (name.includes('kbc')) return '#16a34a';
-  if (name.includes('kenyans')) return '#2563eb';
-  return '#3b82f6';
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return palette[Math.abs(hash) % palette.length];
 }
 
 // Load Real Article Counts across the Main Topics
@@ -439,14 +434,15 @@ function renderArticles() {
       : ((count === 2 || art.corroborationTier === 'DUAL_SOURCE') ? `⚡ 2 Outlets Corroborated` : `Single Outlet`);
     const corrobList = (art.corroboratingSources && art.corroboratingSources.length > 0) ? art.corroboratingSources.join(', ') : art.sourceName;
 
-    // Political Taxonomy Category
-    const catLabel = art.politicalCategoryLabel || art.topic || 'General News';
-    const catIcon = art.politicalCategoryIcon || '🌐';
-    const catColor = art.politicalCategoryColor || '#6366f1';
+    // Political Taxonomy Category with solid theme colors
+    const topicMeta = TOPIC_METADATA[art.politicalCategory] || TOPIC_METADATA.general;
+    const catLabel = art.politicalCategoryLabel || topicMeta.label;
+    const catIcon = art.politicalCategoryIcon || topicMeta.icon;
+    const catColor = topicMeta.color || '#e4a83b';
 
     return `
       <div class="mention-item" onclick="openArticleModal('${art.id}')" title="Click to view cross-source corroboration and intelligence matrix">
-        <div class="outlet-avatar" style="background-color: ${avatarBg};">
+        <div class="outlet-avatar" style="background-color: ${avatarBg}; color: #e4a83b; border: 1px solid #1d3b63; border-radius: 2px;">
           ${sourceInitial}
         </div>
         <div class="mention-main-col">
@@ -463,7 +459,7 @@ function renderArticles() {
           ` : ''}
         </div>
         <div class="mention-tags-col">
-          <span class="category-tag-pill" style="color: ${catColor}; border-color: ${catColor}40;">
+          <span class="category-tag-pill" style="color: ${catColor}; border: 1px solid #142945; background: #091628; border-radius: 2px;">
             <span>${catIcon}</span> ${escapeHtml(catLabel)}
           </span>
         </div>
@@ -618,7 +614,7 @@ function renderAnalysis(report) {
       <div class="card" style="padding: 12px;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
           <strong style="color: #ffffff; font-size: 0.8rem;">${escapeHtml(actor.name)}</strong>
-          <span style="font-size: 0.68rem; color: #60a5fa;">${escapeHtml(actor.sentiment || 'Active')}</span>
+          <span style="font-size: 0.68rem; color: #e4a83b;">${escapeHtml(actor.sentiment || 'Active')}</span>
         </div>
         <p style="font-size: 0.72rem; color: #64748b;">${escapeHtml(actor.role || '')}</p>
       </div>
@@ -643,7 +639,7 @@ function renderTopNarrativesCard(narratives) {
   const container = document.getElementById('top-narratives-list');
   if (!container) return;
 
-  const colors = ['#ef4444', '#f59e0b', '#eab308', '#10b981', '#3b82f6'];
+  const colors = ['#e4a83b', '#ffffff', '#cbd5e1', '#8fa3bf', '#e4a83b'];
 
   const items = (narratives && narratives.length > 0) ? narratives.slice(0, 5) : [
     { title: 'Water shortages in Nairobi', mentionCount: '1,842', growthRate: '+ 684%' },
@@ -656,7 +652,7 @@ function renderTopNarrativesCard(narratives) {
   container.innerHTML = items.map((n, idx) => `
     <div class="narrative-row" onclick="switchView('narratives')">
       <span class="row-rank">${idx + 1}</span>
-      <span class="row-dot" style="background-color: ${colors[idx % colors.length]};"></span>
+      <span class="row-dot" style="background-color: ${colors[idx % colors.length]}; border-radius: 1px;"></span>
       <div class="row-content">
         <div class="row-title" title="${escapeHtml(n.title)}">${escapeHtml(n.title)}</div>
         <div class="row-mentions">${n.mentionCount || n.articleCount || 100} mentions</div>
@@ -672,11 +668,11 @@ function renderSideAlertsList(alerts) {
   if (!container) return;
 
   const items = (alerts && alerts.length > 0) ? alerts.slice(0, 5) : [
-    { title: 'Potential misinformation detected', description: 'Claim: Nairobi will have a 48-hour blackout...', time: '2h ago', icon: '⚠️', iconColor: '#ef4444' },
-    { title: 'Sudden increase in mentions', description: 'Topic: Fuel prices', time: '3h ago', icon: 'ℹ️', iconColor: '#f59e0b' },
-    { title: 'Growing negative sentiment', description: 'Topic: Kenya Power', time: '5h ago', icon: '⚠️', iconColor: '#f97316' },
-    { title: 'New narrative detected', description: 'Topic: Education sector protests', time: '6h ago', icon: 'ℹ️', iconColor: '#3b82f6' },
-    { title: 'Trending topic', description: 'Topic: Water shortages (Nairobi)', time: '8h ago', icon: 'ℹ️', iconColor: '#f59e0b' }
+    { title: 'Potential misinformation detected', description: 'Claim: Nairobi will have a 48-hour blackout...', time: '2h ago', icon: '⚠️', iconColor: '#e4a83b' },
+    { title: 'Sudden increase in mentions', description: 'Topic: Fuel prices', time: '3h ago', icon: 'ℹ️', iconColor: '#e4a83b' },
+    { title: 'Growing negative sentiment', description: 'Topic: Kenya Power', time: '5h ago', icon: '⚠️', iconColor: '#e4a83b' },
+    { title: 'New narrative detected', description: 'Topic: Education sector protests', time: '6h ago', icon: 'ℹ️', iconColor: '#e4a83b' },
+    { title: 'Trending topic', description: 'Topic: Water shortages (Nairobi)', time: '8h ago', icon: 'ℹ️', iconColor: '#e4a83b' }
   ];
 
   container.innerHTML = items.map(a => `
@@ -747,7 +743,7 @@ function renderNarrativesView(narratives) {
     <div class="narrative-card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <span class="sentiment-badge neutral">${escapeHtml(n.domain || 'National')}</span>
-        <span style="font-size: 0.74rem; color: #60a5fa;">📻 Origin: ${escapeHtml(n.originOutlet || 'Kenyan Press')}</span>
+        <span style="font-size: 0.74rem; color: #cbd5e1;">📻 Origin: ${escapeHtml(n.originOutlet || 'Kenyan Press')}</span>
         <span class="sentiment-badge negative">${escapeHtml(n.velocity || 'ACTIVE')}</span>
       </div>
       <h3 style="color: #ffffff; font-size: 0.95rem; margin-bottom: 6px;">${escapeHtml(n.title)}</h3>
@@ -773,12 +769,12 @@ function renderClaimsView(claims) {
     <div class="claim-card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <span class="sentiment-badge ${c.status === 'DISPUTED' ? 'negative' : 'positive'}">${c.status || 'UNVERIFIED'}</span>
-        <span style="font-size: 0.74rem; color: #f59e0b;">Velocity: ${c.velocityScore || 65}/100</span>
+        <span style="font-size: 0.74rem; color: #e4a83b;">Velocity: ${c.velocityScore || 65}/100</span>
       </div>
       <p style="color: #ffffff; font-size: 0.88rem; font-weight: 600; margin-bottom: 6px;">"${escapeHtml(c.claim)}"</p>
-      <p style="color: #64748b; font-size: 0.74rem; margin-bottom: 8px;">Source: ${escapeHtml(c.claimant || 'Media Report')}</p>
+      <p style="color: #8fa3bf; font-size: 0.74rem; margin-bottom: 8px;">Source: ${escapeHtml(c.claimant || 'Media Report')}</p>
       ${c.hasContradiction ? `
-        <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 8px 12px; font-size: 0.76rem; color: #fca5a5;">
+        <div style="background: #112747; border: 1px solid #1d3b63; border-left: 3px solid #e4a83b; border-radius: 2px; padding: 8px 12px; font-size: 0.76rem; color: #cbd5e1;">
           ⚠️ Contradiction: ${escapeHtml(c.contradictionDetails || 'Contradictory accounts reported across media.')}
         </div>
       ` : ''}
@@ -805,7 +801,7 @@ function renderAlertsView(alerts) {
       <h4 style="color: #ffffff; font-size: 0.92rem; margin-bottom: 6px;">${escapeHtml(a.title)}</h4>
       <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 10px;">${escapeHtml(a.description || '')}</p>
       ${a.actionableAdvisory ? `
-        <div style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; padding: 8px 12px; font-size: 0.76rem; color: #a7f3d0;">
+        <div style="background: #112747; border: 1px solid #1d3b63; border-left: 3px solid #ffffff; border-radius: 2px; padding: 8px 12px; font-size: 0.76rem; color: #cbd5e1;">
           <strong>Recommended Stakeholder Advisory:</strong> ${escapeHtml(a.actionableAdvisory)}
         </div>
       ` : ''}
@@ -860,33 +856,33 @@ function renderMentionVolumeChart(trends) {
     <svg viewBox="0 0 ${width} ${height + 25}" style="width: 100%; height: 100%; overflow: visible;">
       <defs>
         <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.35"/>
-          <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.0"/>
+          <stop offset="0%" stop-color="#e4a83b" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#e4a83b" stop-opacity="0.0"/>
         </linearGradient>
       </defs>
 
       <!-- Horizontal grid lines -->
-      <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" stroke="#1e293b" stroke-width="1"/>
-      <line x1="${paddingX}" y1="${height / 2}" x2="${width - paddingX}" y2="${height / 2}" stroke="#1e293b" stroke-width="1" stroke-dasharray="3,3"/>
-      <line x1="${paddingX}" y1="${paddingY}" x2="${width - paddingX}" y2="${paddingY}" stroke="#1e293b" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" stroke="#142945" stroke-width="1"/>
+      <line x1="${paddingX}" y1="${height / 2}" x2="${width - paddingX}" y2="${height / 2}" stroke="#142945" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="${paddingX}" y1="${paddingY}" x2="${width - paddingX}" y2="${paddingY}" stroke="#142945" stroke-width="1" stroke-dasharray="3,3"/>
 
       <!-- Y axis labels -->
-      <text x="5" y="${paddingY + 4}" fill="#64748b" font-size="9" font-family="var(--font-mono)">2.0k</text>
-      <text x="5" y="${height / 2 + 3}" fill="#64748b" font-size="9" font-family="var(--font-mono)">1.0k</text>
-      <text x="12" y="${height - paddingY + 3}" fill="#64748b" font-size="9" font-family="var(--font-mono)">0</text>
+      <text x="5" y="${paddingY + 4}" fill="#8fa3bf" font-size="9" font-family="var(--font-mono)">2.0k</text>
+      <text x="5" y="${height / 2 + 3}" fill="#8fa3bf" font-size="9" font-family="var(--font-mono)">1.0k</text>
+      <text x="12" y="${height - paddingY + 3}" fill="#8fa3bf" font-size="9" font-family="var(--font-mono)">0</text>
 
       <!-- Area fill -->
       <path d="${areaD}" fill="url(#areaGradient)"/>
 
       <!-- Previous day line -->
-      <path d="${prevD}" fill="none" stroke="#475569" stroke-width="1.8" stroke-dasharray="4,4"/>
+      <path d="${prevD}" fill="none" stroke="#5c7494" stroke-width="1.8" stroke-dasharray="4,4"/>
 
       <!-- Main spline curve -->
-      <path d="${lineD}" fill="none" stroke="#3B82F6" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="${lineD}" fill="none" stroke="#e4a83b" stroke-width="2.6" stroke-linecap="round"/>
 
       <!-- Data point circles -->
       ${points.map(p => `
-        <circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#1e293b" stroke="#3B82F6" stroke-width="2">
+        <circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#071324" stroke="#e4a83b" stroke-width="2">
           <title>${p.val} mentions</title>
         </circle>
       `).join('')}
@@ -894,7 +890,7 @@ function renderMentionVolumeChart(trends) {
       <!-- Time labels -->
       ${labels.map((l, idx) => {
         const x = paddingX + (idx / (labels.length - 1)) * (width - paddingX * 2);
-        return `<text x="${x}" y="${height + 15}" fill="#64748b" font-size="9" text-anchor="middle" font-family="var(--font-mono)">${l}</text>`;
+        return `<text x="${x}" y="${height + 15}" fill="#8fa3bf" font-size="9" text-anchor="middle" font-family="var(--font-mono)">${l}</text>`;
       }).join('')}
     </svg>
   `;
@@ -931,23 +927,23 @@ function renderSentimentDonutChart(sentiment) {
 
   container.innerHTML = `
     <svg viewBox="0 0 140 140" style="width: 100%; height: 100%; transform: rotate(-90deg);">
-      <circle cx="70" cy="70" r="${radius}" fill="none" stroke="#1e293b" stroke-width="14"/>
+      <circle cx="70" cy="70" r="${radius}" fill="none" stroke="#142945" stroke-width="14"/>
       
-      <!-- Negative segment (Red) -->
-      <circle cx="70" cy="70" r="${radius}" fill="none" stroke="#EF4444" stroke-width="14"
+      <!-- Negative segment (Gold #e4a83b) -->
+      <circle cx="70" cy="70" r="${radius}" fill="none" stroke="#e4a83b" stroke-width="14"
         stroke-dasharray="${negLen} ${circumference - negLen}" stroke-dashoffset="${negOffset}"/>
 
-      <!-- Neutral segment (Slate) -->
-      <circle cx="70" cy="70" r="${radius}" fill="none" stroke="#64748B" stroke-width="14"
+      <!-- Neutral segment (Slate/Muted white #8fa3bf) -->
+      <circle cx="70" cy="70" r="${radius}" fill="none" stroke="#8fa3bf" stroke-width="14"
         stroke-dasharray="${neutLen} ${circumference - neutLen}" stroke-dashoffset="${neutOffset}"/>
 
-      <!-- Positive segment (Green) -->
-      <circle cx="70" cy="70" r="${radius}" fill="none" stroke="#10B981" stroke-width="14"
+      <!-- Positive segment (White #ffffff) -->
+      <circle cx="70" cy="70" r="${radius}" fill="none" stroke="#ffffff" stroke-width="14"
         stroke-dasharray="${posLen} ${circumference - posLen}" stroke-dashoffset="${posOffset}"/>
     </svg>
     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;">
       <span style="font-size: 0.95rem; font-weight: 800; color: #ffffff; line-height: 1;">2,481</span>
-      <span style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">mentions</span>
+      <span style="font-size: 0.65rem; color: #8fa3bf; margin-top: 2px;">mentions</span>
     </div>
   `;
 }
@@ -1135,10 +1131,10 @@ function renderFeedsModal() {
         <div style="font-size: 0.7rem; color: #64748b; font-family: var(--font-mono);">${escapeHtml(f.url)}</div>
       </div>
       <div style="display: flex; gap: 8px;">
-        <button class="sentiment-badge ${f.active ? 'positive' : 'neutral'}" style="cursor: pointer; border: none;" onclick="toggleFeed('${f.id}')">
+        <button class="sentiment-badge ${f.active ? 'positive' : 'neutral'}" style="cursor: pointer; border: none; border-radius: 2px;" onclick="toggleFeed('${f.id}')">
           ${f.active ? 'ACTIVE' : 'PAUSED'}
         </button>
-        <button style="background: none; border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; border-radius: 4px; padding: 2px 6px; cursor: pointer;" onclick="deleteFeed('${f.id}')">✕</button>
+        <button style="background: #091628; border: 1px solid #1d3b63; color: #e4a83b; border-radius: 2px; padding: 2px 8px; cursor: pointer; font-size: 11px;" onclick="deleteFeed('${f.id}')">✕</button>
       </div>
     </div>
   `).join('');
@@ -1231,21 +1227,21 @@ function openArticleModal(id) {
   const corrobList = (art.corroboratingSources && art.corroboratingSources.length > 0) ? art.corroboratingSources : [art.sourceName];
   const catLabel = art.politicalCategoryLabel || art.topic || 'Politics & Governance';
   const catIcon = art.politicalCategoryIcon || '🏛️';
-  const catColor = art.politicalCategoryColor || '#3b82f6';
+  const catColor = '#e4a83b';
 
   if (body) {
     body.innerHTML = `
       <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;">
-        <span class="category-tag-pill" style="color: ${catColor}; border-color: ${catColor}40; background: ${catColor}15; font-size: 0.78rem; padding: 4px 10px;">
+        <span class="category-tag-pill" style="color: #e4a83b; border-color: rgba(228, 168, 59, 0.4); background: rgba(228, 168, 59, 0.12); font-size: 0.78rem; padding: 4px 10px; border-radius: 2px;">
           <span>${catIcon}</span> ${escapeHtml(catLabel)}
         </span>
-        <span class="tag-badge" style="background: rgba(255,255,255,0.06); color: #ffffff;">${escapeHtml(art.sourceName)}</span>
-        <span class="sentiment-badge ${risk === 'HIGH' ? 'negative' : (risk === 'MEDIUM' ? 'neutral' : 'positive')}">${risk} TENSION RISK</span>
-        <span style="font-size: 0.72rem; color: #64748b; margin-left: auto;">${new Date(art.pubDate).toLocaleString('en-GB', { timeZone: 'Africa/Nairobi' })} EAT</span>
+        <span class="tag-badge" style="background: #112747; color: #ffffff; border: 1px solid #1d3b63; border-radius: 2px;">${escapeHtml(art.sourceName)}</span>
+        <span class="sentiment-badge ${risk === 'HIGH' ? 'negative' : (risk === 'MEDIUM' ? 'neutral' : 'positive')}" style="border-radius: 2px;">${risk} TENSION RISK</span>
+        <span style="font-size: 0.72rem; color: #8fa3bf; margin-left: auto;">${new Date(art.pubDate).toLocaleString('en-GB', { timeZone: 'Africa/Nairobi' })} EAT</span>
       </div>
 
       <!-- Cross-Source Corroboration Matrix -->
-      <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+      <div style="background: #091628; border: 1px solid #142945; border-radius: 2px; padding: 14px; margin-bottom: 14px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <strong style="color: #ffffff; font-size: 0.82rem; display: flex; align-items: center; gap: 6px;">
             <span>⚡</span> Cross-Source Corroboration Intelligence
@@ -1254,34 +1250,34 @@ function openArticleModal(id) {
             ${count >= 3 ? `🌟 ${count} Outlets Verified` : (count === 2 ? `⚡ 2 Outlets Corroborated` : `Single Outlet`)}
           </span>
         </div>
-        <p style="font-size: 0.76rem; color: #94a3b8; margin-bottom: 8px;">
+        <p style="font-size: 0.76rem; color: #cbd5e1; margin-bottom: 8px;">
           ${escapeHtml(art.corroborationSummary || (count > 1 ? `Story verified across ${count} distinct media outlets.` : `Exclusively reported by ${art.sourceName}.`))}
         </p>
         <div class="corrob-sources-row">
-          <span style="font-size: 0.72rem; color: #64748b;">Reporting Outlets:</span>
-          ${corrobList.map(s => `<span class="corrob-source-chip">📰 ${escapeHtml(s)}</span>`).join('')}
+          <span style="font-size: 0.72rem; color: #8fa3bf;">Reporting Outlets:</span>
+          ${corrobList.map(s => `<span class="corrob-source-chip" style="background: #112747; border: 1px solid #1d3b63; border-radius: 2px; color: #ffffff;">📰 ${escapeHtml(s)}</span>`).join('')}
         </div>
       </div>
 
       <!-- Matched Political Keywords -->
       ${art.matchedKeywords && art.matchedKeywords.length > 0 ? `
         <div style="margin-bottom: 14px;">
-          <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 6px;">Taxonomy Matched Keywords:</div>
+          <div style="font-size: 0.72rem; color: #8fa3bf; font-weight: 600; text-transform: uppercase; margin-bottom: 6px;">Taxonomy Matched Keywords:</div>
           <div class="kw-chips-container">
-            ${art.matchedKeywords.map(kw => `<span class="kw-chip" style="font-size: 0.72rem; padding: 2px 8px;">#${escapeHtml(kw)}</span>`).join('')}
+            ${art.matchedKeywords.map(kw => `<span class="kw-chip" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 2px; background: #091628; border: 1px solid #142945; color: #cbd5e1;">#${escapeHtml(kw)}</span>`).join('')}
           </div>
         </div>
       ` : ''}
 
       <!-- Story Excerpt -->
-      <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 8px; border: 1px solid var(--border-subtle); line-height: 1.6; color: #cbd5e1; font-size: 0.86rem; margin-bottom: 14px;">
+      <div style="background: #091628; padding: 16px; border-radius: 2px; border: 1px solid #142945; line-height: 1.6; color: #cbd5e1; font-size: 0.86rem; margin-bottom: 14px;">
         <strong style="color: #ffffff; display: block; margin-bottom: 6px;">Story Excerpt:</strong>
         <p>${escapeHtml(art.summary || 'No excerpt available.')}</p>
       </div>
 
       ${art.aiKeyTrigger ? `
-        <div style="background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; padding: 12px 16px; border-radius: 0 8px 8px 0; color: #fca5a5; font-size: 0.84rem;">
-          <strong>Early-Warning Strategic Signal:</strong> ${escapeHtml(art.aiKeyTrigger)}
+        <div style="background: #112747; border-left: 3px solid #e4a83b; padding: 12px 16px; border-radius: 2px; color: #cbd5e1; font-size: 0.84rem;">
+          <strong style="color: #e4a83b;">Strategic Warning Signal:</strong> ${escapeHtml(art.aiKeyTrigger)}
         </div>
       ` : ''}
     `;

@@ -1,0 +1,32 @@
+=== slide1.xml ===
+Pitch Deck | Format this cover page inserting the following as appropriate: | Name of Company | Company Logo
+
+=== slide2.xml ===
+{Brief introduction to the startup including unique value proposition} | Insert Image | Insert Image | Company Overview | Key | Insights
+
+=== slide3.xml ===
+Solution 1 | Solution 2 | Solution 3 | {How your product/service solves the problem} | Solution | {The issue your startup is addressing} | Problem | 1 | Problem | 2 | Problem | 3 | Problem Statement
+
+=== slide4.xml ===
+1. | 2 | 3 | 4 | {Overview of your offering, including features and benefits} | Products and Services
+
+=== slide5.xml ===
+{Size, growth potential and target market} | TAM | SAM | SOM | Market Opportunity | Insert Text
+
+=== slide6.xml ===
+Business Model | {How the startup generates revenue | } | 1. | 3. | 2. | Insert Image
+
+=== slide7.xml ===
+{BDBED569-4797-4DF1-A0F4-6AAB3CD982D8}Component/Competitor | Component/ Competitor 1 | Component/Competitor 2 | Component/ Competitor 3 | Competitive Advantage | 1 | 2 | 3 | 4 | 5 | {Analysis of competitors and your startup’s unique advantages} | Competitive Landscape
+
+=== slide8.xml ===
+1 | 3 | 2 | 4 | {Plans for acquiring customers and scaling the business} | Go-To-Market Strategy
+
+=== slide9.xml ===
+{Highlight how much funding you looking for and how it will be used} | Use of funds description | Amount | 1. | 2. | 3. | 4. | TOTAL | $ | Capital Injection | DEBT/E | QUITY INVESTMENT | Ask Amount
+
+=== slide10.xml ===
+{Introduction to the founders and key team members} | Our Team | Name | Designation | Name | Designation | Name | Designation | Name | Designation
+
+=== slide11.xml ===
+THANK YOU | Company Contact Details
