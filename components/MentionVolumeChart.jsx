@@ -1,27 +1,71 @@
 'use client';
-import React from 'react';
+import React, { useMemo } from 'react';
 
-export default function MentionVolumeChart() {
-  const points = [
-    { x: 30, y: 75, val: 240 },
-    { x: 70, y: 65, val: 410 },
-    { x: 110, y: 40, val: 820 },
-    { x: 150, y: 55, val: 630 },
-    { x: 190, y: 30, val: 990 },
-    { x: 230, y: 20, val: 1240 },
-    { x: 270, y: 35, val: 850 }
-  ];
+export default function MentionVolumeChart({ articles = [] }) {
+  // Compute real hourly distribution buckets from articles' pub_date / pubDate
+  const { points, maxVal, totalMentions, pathD, areaD, labels } = useMemo(() => {
+    // 6 time buckets across the past 24 hours: 4h chunks
+    const now = Date.now();
+    const bucketHours = [20, 16, 12, 8, 4, 0]; // hours ago
+    const bucketLabels = ['-20h', '-16h', '-12h', '-8h', '-4h', 'Now'];
+    const counts = [0, 0, 0, 0, 0, 0];
 
-  const pathD = `M 30 75 Q 50 70, 70 65 T 110 40 T 150 55 T 190 30 T 230 20 T 270 35`;
-  const areaD = `${pathD} L 270 95 L 30 95 Z`;
+    articles.forEach(art => {
+      const dateStr = art.pub_date || art.pubDate || art.created_at;
+      if (!dateStr) return;
+      const t = new Date(dateStr).getTime();
+      if (isNaN(t)) return;
+      const diffHours = (now - t) / (1000 * 60 * 60);
+
+      if (diffHours >= 16) counts[0]++;
+      else if (diffHours >= 12) counts[1]++;
+      else if (diffHours >= 8) counts[2]++;
+      else if (diffHours >= 4) counts[3]++;
+      else if (diffHours >= 1) counts[4]++;
+      else counts[5]++;
+    });
+
+    const max = Math.max(...counts, 1);
+    const pts = counts.map((count, idx) => {
+      const x = 30 + idx * (240 / 5);
+      // Normalized between y=85 (baseline) and y=25 (peak)
+      const y = Math.round(85 - (count / max) * 60);
+      return { x, y, val: count, label: bucketLabels[idx] };
+    });
+
+    // Build SVG path
+    let pD = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      const prev = pts[i - 1];
+      const curr = pts[i];
+      const midX = (prev.x + curr.x) / 2;
+      pD += ` C ${midX} ${prev.y}, ${midX} ${curr.y}, ${curr.x} ${curr.y}`;
+    }
+
+    const aD = `${pD} L ${pts[pts.length - 1].x} 95 L ${pts[0].x} 95 Z`;
+
+    return {
+      points: pts,
+      maxVal: max,
+      totalMentions: articles.length,
+      pathD: pD,
+      areaD: aD,
+      labels: bucketLabels
+    };
+  }, [articles]);
 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-        <h4 style={{ margin: 0, fontSize: '13px', color: '#ffffff' }}>Hourly Story Velocity</h4>
+        <div>
+          <h4 style={{ margin: 0, fontSize: '13px', color: '#ffffff' }}>Hourly Story Velocity</h4>
+          <span style={{ fontSize: '10px', color: '#8fa3bf' }}>
+            Derived from {totalMentions} live database records
+          </span>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#e4a83b' }}>
           <span style={{ width: '8px', height: '8px', background: '#e4a83b', borderRadius: '1px' }}></span>
-          <span>Verified Volume</span>
+          <span>Peak: {maxVal} / bucket</span>
         </div>
       </div>
 
@@ -48,19 +92,28 @@ export default function MentionVolumeChart() {
               key={i}
               cx={p.x}
               cy={p.y}
-              r="3"
+              r="3.5"
               fill="#071324"
               stroke="#e4a83b"
               strokeWidth="1.8"
-              aria-label={`${p.val} mentions`}
+              aria-label={`${p.val} items at ${p.label}`}
             />
           ))}
 
-          {/* Labels */}
-          <text x="30" y="110" fill="#8fa3bf" fontSize="8" fontFamily="var(--font-mono)">06:00</text>
-          <text x="110" y="110" fill="#8fa3bf" fontSize="8" fontFamily="var(--font-mono)">10:00</text>
-          <text x="190" y="110" fill="#8fa3bf" fontSize="8" fontFamily="var(--font-mono)">14:00</text>
-          <text x="270" y="110" fill="#8fa3bf" fontSize="8" fontFamily="var(--font-mono)">Now</text>
+          {/* Dynamic Labels */}
+          {points.map((p, i) => (
+            <text
+              key={i}
+              x={p.x}
+              y="108"
+              fill="#8fa3bf"
+              fontSize="8"
+              fontFamily="var(--font-mono)"
+              textAnchor="middle"
+            >
+              {p.label}
+            </text>
+          ))}
         </svg>
       </div>
     </div>

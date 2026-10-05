@@ -140,6 +140,11 @@ export default function DashboardPage() {
   const rssCount = articles.filter(a => a.sourceType !== 'social_x').length;
   const socialCount = articles.filter(a => a.sourceType === 'social_x').length;
 
+  const highRiskCount = articles.filter(a => (a.tensionRisk || a.risk_level || a.initialRisk) === 'HIGH').length;
+  const computedRisk = report
+    ? report.strategicRiskLevel
+    : (highRiskCount >= 5 || (articles.length > 0 && highRiskCount / articles.length > 0.15) ? 'HIGH' : (highRiskCount > 0 ? 'MEDIUM' : 'STABLE'));
+
   return (
     <div style={{ minHeight: '100vh', background: '#071324', color: '#ffffff' }}>
       <Navbar
@@ -209,14 +214,14 @@ export default function DashboardPage() {
           rssCount={rssCount}
           socialCount={socialCount}
           corroboratedCount={articles.filter(a => (a.sourceCount || 1) >= 2).length}
-          riskLevel={report ? report.strategicRiskLevel : 'MEDIUM'}
+          riskLevel={computedRisk}
         />
 
-        {/* Middle Analytics Grid */}
+        {/* Middle Analytics Grid (Dynamically Calculated from Database Items) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-          <MentionVolumeChart />
-          <SentimentDonut sentiment={report ? report.sentimentDistribution : null} />
-          <TopStories narratives={report ? report.narratives : []} />
+          <MentionVolumeChart articles={articles} />
+          <SentimentDonut sentiment={report ? report.sentimentDistribution : null} articles={articles} />
+          <TopStories narratives={report ? report.narratives : []} articles={articles} />
         </div>
 
         {/* Main Corroborated Feed */}

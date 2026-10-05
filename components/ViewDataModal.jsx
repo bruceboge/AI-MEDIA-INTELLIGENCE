@@ -22,7 +22,10 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
     try {
       const res = await fetch('/api/database?type=sessions');
       const data = await res.json();
-      if (data.sessions) setSessions(data.sessions);
+      if (Array.isArray(data.sessions)) {
+        // Filter out empty ghost sessions
+        setSessions(data.sessions.filter(s => (s.items_count || 0) > 0));
+      }
     } catch (e) {
       console.warn('Could not load sessions');
     }
@@ -32,9 +35,9 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (sourceFilter !== 'all') params.set('source', sourceFilter);
-      if (categoryFilter !== 'all') params.set('category', categoryFilter);
-      if (selectedSession !== 'all') params.set('sessionId', selectedSession);
+      if (sourceFilter && sourceFilter !== 'all') params.set('source', sourceFilter);
+      if (categoryFilter && categoryFilter !== 'all') params.set('category', categoryFilter);
+      if (selectedSession && selectedSession !== 'all') params.set('sessionId', selectedSession);
       if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
       const res = await fetch(`/api/database?${params.toString()}`);
@@ -51,6 +54,34 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
       console.error('Failed to load database items:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSourceTabChange = (newSource) => {
+    setSourceFilter(newSource);
+    // Reset session filter if current session doesn't match the new tab
+    if (selectedSession !== 'all') {
+      const current = sessions.find(s => s.id === selectedSession);
+      if (current && newSource !== 'all' && current.session_type !== newSource) {
+        setSelectedSession('all');
+      }
+    }
+  };
+
+  const handleResetFilters = () => {
+    setSourceFilter('all');
+    setSelectedSession('all');
+    setCategoryFilter('all');
+    setSearchQuery('');
+  };
+
+  const formatSafeTime = (dateStr) => {
+    if (!dateStr) return 'Live';
+    try {
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? 'Live' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return 'Live';
     }
   };
 
@@ -74,7 +105,7 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
         borderRadius: '2px',
         width: '100%',
         maxWidth: '1100px',
-        maxHeight: '90vh',
+        height: '88vh',
         display: 'flex',
         flexDirection: 'column',
         boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
@@ -95,7 +126,7 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
               </h3>
             </div>
             <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#8fa3bf' }}>
-              Viewing historical extraction sessions and raw database records (Supabase Postgres & Persistent Store)
+              Real-time records from Supabase Postgres Cloud & Persistent Intelligence Store
             </p>
           </div>
 
@@ -110,9 +141,10 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
                 background: '#112747',
                 border: '1px solid #1d3b63',
                 color: '#e4a83b',
-                padding: '4px 10px',
+                padding: '5px 12px',
                 borderRadius: '2px',
                 fontSize: '11px',
+                fontWeight: 600,
                 cursor: 'pointer'
               }}
             >
@@ -124,7 +156,7 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
                 background: 'transparent',
                 border: 'none',
                 color: '#8fa3bf',
-                fontSize: '18px',
+                fontSize: '20px',
                 cursor: 'pointer'
               }}
             >
@@ -147,7 +179,7 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
           {/* Source Tabs */}
           <div style={{ display: 'flex', gap: '4px', background: '#050d18', padding: '3px', borderRadius: '2px', border: '1px solid #142945' }}>
             <button
-              onClick={() => setSourceFilter('all')}
+              onClick={() => handleSourceTabChange('all')}
               style={{
                 background: sourceFilter === 'all' ? '#e4a83b' : 'transparent',
                 color: sourceFilter === 'all' ? '#071324' : '#cbd5e1',
@@ -162,7 +194,7 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
               All Records ({counts.total})
             </button>
             <button
-              onClick={() => setSourceFilter('rss')}
+              onClick={() => handleSourceTabChange('rss')}
               style={{
                 background: sourceFilter === 'rss' ? '#e4a83b' : 'transparent',
                 color: sourceFilter === 'rss' ? '#071324' : '#cbd5e1',
@@ -177,7 +209,7 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
               📰 RSS News ({counts.rss})
             </button>
             <button
-              onClick={() => setSourceFilter('social_x')}
+              onClick={() => handleSourceTabChange('social_x')}
               style={{
                 background: sourceFilter === 'social_x' ? '#e4a83b' : 'transparent',
                 color: sourceFilter === 'social_x' ? '#071324' : '#cbd5e1',
@@ -211,14 +243,14 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
               <option value="all">All Extraction Batches</option>
               {sessions.map(s => (
                 <option key={s.id} value={s.id}>
-                  {s.session_type === 'rss' ? '📰 RSS' : '𝕏 Apify'} • {new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({s.items_count} items)
+                  {s.session_type === 'rss' ? '📰 RSS' : '𝕏 Apify'} • {formatSafeTime(s.created_at)} ({s.items_count} items)
                 </option>
               ))}
             </select>
 
             <input
               type="text"
-              placeholder="Search database content..."
+              placeholder="Search title or text..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && loadDatabaseContent()}
@@ -243,14 +275,34 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
             </div>
           ) : items.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#8fa3bf', fontSize: '13px' }}>
-              No database records found matching this filter. Click "Extract RSS" or "Harvest Apify" to populate.
+              <p style={{ margin: '0 0 12px' }}>No records found matching current session and filter parameters.</p>
+              <button
+                onClick={handleResetFilters}
+                style={{
+                  background: '#112747',
+                  border: '1px solid #e4a83b',
+                  color: '#e4a83b',
+                  padding: '6px 14px',
+                  borderRadius: '2px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Reset Filters (Show All {counts.total} Records)
+              </button>
             </div>
           ) : (
             items.map((item, idx) => {
               const isSocial = item.source_type === 'social_x';
+              const safeId = String(item.id || item.link || idx).slice(0, 16);
+              const authorText = isSocial
+                ? (item.author_name ? `${item.author_name} (@${item.author_handle || ''})` : `@${item.author_handle || 'source'}`)
+                : (item.source_name || 'Kenya Media');
+
               return (
                 <div
-                  key={item.id || idx}
+                  key={`${item.id || item.link || 'row'}-${idx}`}
                   style={{
                     background: isSocial ? '#08182b' : '#071626',
                     border: '1px solid ' + (isSocial ? '#1c3d69' : '#142945'),
@@ -263,7 +315,7 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                       <span style={{
                         fontSize: '9px',
                         fontWeight: 800,
@@ -278,25 +330,27 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
                       </span>
 
                       <strong style={{ fontSize: '11px', color: '#ffffff' }}>
-                        {isSocial ? `${item.author_name || item.author_handle} (@${item.author_handle})` : item.source_name}
+                        {authorText}
                       </strong>
 
                       <span style={{ fontSize: '10px', color: '#8fa3bf' }}>
-                        • {item.pub_date ? new Date(item.pub_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live'}
+                        • {formatSafeTime(item.pub_date)}
                       </span>
 
                       <span style={{ fontSize: '9px', color: '#5c7494', fontFamily: 'var(--font-mono)' }}>
-                        ID: {item.id.slice(0, 14)}...
+                        ID: {safeId}...
                       </span>
                     </div>
 
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff', marginBottom: '3px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff', marginBottom: '3px', lineHeight: 1.4 }}>
                       {item.title}
                     </div>
 
-                    <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: 1.4, maxHeight: '36px', overflow: 'hidden' }}>
-                      {item.summary}
-                    </div>
+                    {item.summary && item.summary !== item.title && (
+                      <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: 1.4, maxHeight: '36px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.summary}
+                      </div>
+                    )}
 
                     {isSocial && item.metrics && (
                       <div style={{ marginTop: '5px', fontSize: '10px', color: '#8fa3bf', display: 'flex', gap: '10px' }}>
@@ -307,7 +361,7 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', flexShrink: 0 }}>
                     <span className={`badge-sentiment ${item.risk_level === 'HIGH' ? '' : (item.risk_level === 'MEDIUM' ? 'neut' : 'pos')}`}>
                       {item.risk_level || 'STABLE'}
                     </span>
@@ -317,7 +371,7 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
                         href={item.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ fontSize: '10px', color: '#e4a83b', textDecoration: 'none', fontWeight: 600 }}
+                        style={{ fontSize: '10px', color: '#e4a83b', textDecoration: 'none', fontWeight: 600, marginTop: '8px' }}
                       >
                         {isSocial ? 'Open 𝕏 ↗' : 'Read Outlet ↗'}
                       </a>
@@ -341,10 +395,10 @@ export default function ViewDataModal({ isOpen, onClose, onRefreshData }) {
           color: '#8fa3bf'
         }}>
           <div>
-            Connected Storage: <strong style={{ color: '#ffffff' }}>Supabase PostgreSQL + High-Speed Local Cache</strong>
+            Connected Storage: <strong style={{ color: '#ffffff' }}>Supabase PostgreSQL Cloud + High-Speed Local Cache</strong>
           </div>
           <div>
-            Showing {items.length} records of {counts.total} stored
+            Showing <strong style={{ color: '#ffffff' }}>{items.length}</strong> of <strong style={{ color: '#ffffff' }}>{counts.total}</strong> stored items
           </div>
         </div>
       </div>
