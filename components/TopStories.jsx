@@ -1,6 +1,40 @@
 'use client';
 import React, { useMemo } from 'react';
 
+// Specific Kenyan storyline clusters to group related news and tweets
+const STORYLINE_DEFINITIONS = [
+  {
+    domain: '2027 Succession & Polls',
+    terms: ['2027', 'election', 'polls', 'iebc', 'succession', 'voter'],
+    defaultHeadline: 'Preparations and Coalition Maneuvers Ahead of 2027 Elections'
+  },
+  {
+    domain: 'Opposition & Coalitions',
+    terms: ['opposition', 'azimio', 'odm', 'sifuna', 'raila', 'equitable party', 'gachagua', 'uhuru'],
+    defaultHeadline: 'Opposition Realignment and Inter-Party Power Dynamics'
+  },
+  {
+    domain: 'Judiciary & Rule of Law',
+    terms: ['court', 'courts', 'judiciary', 'chief justice', 'injunction', 'ruling', 'debt', 'kenha'],
+    defaultHeadline: 'Court Battles Over Public Debt and Infrastructure Funds'
+  },
+  {
+    domain: 'Security & Crime Probes',
+    terms: ['police', 'murder', 'probes', 'ipoa', 'ngec', 'banditry', 'dci', 'crime', 'salama'],
+    defaultHeadline: 'IPOA and Police Investigations into Criminal Events & Safety'
+  },
+  {
+    domain: 'Healthcare & Social Welfare',
+    terms: ['health', 'hospital', 'sha', 'nhif', 'kmpdu', 'doctors', 'cancer'],
+    defaultHeadline: 'Reforms and Transition Challenges in the National Health System'
+  },
+  {
+    domain: 'Economy & Fiscal Policy',
+    terms: ['tax', 'kra', 'finance', 'debt', 'inflation', 'shilling', 'fuel', 'dangote'],
+    defaultHeadline: 'Fiscal Scrutiny Over Public Revenue, Taxes, and Energy'
+  }
+];
+
 export default function TopStories({ narratives = [], articles = [] }) {
   // Compute real clustered narratives dynamically from database articles
   const displayList = useMemo(() => {
@@ -14,50 +48,48 @@ export default function TopStories({ narratives = [], articles = [] }) {
       }));
     }
 
-    if (!articles || articles.length === 0) {
-      return [];
-    }
+    if (!articles || articles.length === 0) return [];
 
-    // Group articles by pillar / category
-    const clusters = {};
-    articles.forEach(art => {
-      const cat = (art.category || art.politicalCategory || art.topic || 'General').toLowerCase();
-      const pillarKey = cat.includes('polit') ? 'Politics'
-        : cat.includes('econ') || cat.includes('tax') ? 'Economy'
-        : cat.includes('health') || cat.includes('sha') ? 'Health'
-        : cat.includes('secu') || cat.includes('police') ? 'Security'
-        : cat.includes('corrup') ? 'Corruption'
-        : cat.includes('gov') ? 'Governance'
-        : 'National Media';
+    // Cluster items into substantive storylines
+    const clusters = STORYLINE_DEFINITIONS.map(def => {
+      const matched = [];
+      const sources = new Set();
+      let highRiskCount = 0;
 
-      if (!clusters[pillarKey]) {
-        clusters[pillarKey] = {
-          domain: pillarKey,
-          items: [],
-          highRiskCount: 0
-        };
-      }
-      clusters[pillarKey].items.push(art);
-      const risk = (art.tensionRisk || art.risk_level || art.initialRisk || 'STABLE').toUpperCase();
-      if (risk === 'HIGH') clusters[pillarKey].highRiskCount++;
-    });
+      articles.forEach(art => {
+        const text = `${art.title || ''} ${art.summary || ''}`.toLowerCase();
+        if (def.terms.some(t => text.includes(t))) {
+          matched.push(art);
+          sources.add(art.source_name || art.sourceName || 'Press');
+          const risk = (art.tensionRisk || art.risk_level || art.initialRisk || 'LOW').toUpperCase();
+          if (risk === 'HIGH') highRiskCount++;
+        }
+      });
 
-    // Sort clusters by number of items descending
-    const sorted = Object.values(clusters).sort((a, b) => b.items.length - a.items.length);
-
-    // Pick top 3 clusters and extract most prominent story
-    return sorted.slice(0, 3).map(c => {
-      // Pick top representative story in this cluster
-      const topStory = c.items.find(i => (i.sourceCount || 1) >= 2) || c.items[0];
-      const isHighVelocity = c.highRiskCount >= 2 || c.items.length >= 8;
+      // Best representative headline: pick an item with multiple sources or shortest clean title
+      const leadStory = matched.find(i => (i.sourceCount || 1) >= 2) || matched[0];
 
       return {
-        domain: c.domain,
-        title: topStory ? topStory.title : `${c.domain} Developments`,
-        velocity: isHighVelocity ? 'HIGH' : 'ACTIVE',
-        volumeText: `${c.items.length} Stories Reporting`
+        domain: def.domain,
+        title: leadStory ? leadStory.title : def.defaultHeadline,
+        count: matched.length,
+        sourcesCount: sources.size,
+        highRiskCount,
+        isHighVelocity: highRiskCount >= 2 || matched.length >= 6
       };
     });
+
+    // Filter clusters that have actual matching stories and sort by volume & sources
+    const activeClusters = clusters
+      .filter(c => c.count > 0)
+      .sort((a, b) => (b.count * 2 + b.sourcesCount) - (a.count * 2 + a.sourcesCount));
+
+    return activeClusters.slice(0, 3).map(c => ({
+      domain: c.domain,
+      title: c.title,
+      velocity: c.isHighVelocity ? 'HIGH' : 'ACTIVE',
+      volumeText: `${c.count} Stories · ${c.sourcesCount} Outlets`
+    }));
   }, [narratives, articles]);
 
   return (
@@ -65,7 +97,7 @@ export default function TopStories({ narratives = [], articles = [] }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
         <h4 style={{ margin: 0, fontSize: '13px', color: '#ffffff' }}>Top Clustered Narratives</h4>
         <span style={{ fontSize: '11px', color: '#e4a83b', fontWeight: 600 }}>
-          {narratives && narratives.length > 0 ? 'AI Clustered' : 'Dynamic Pillars'}
+          {narratives && narratives.length > 0 ? 'AI Clustered' : 'Dynamic Narrative Clusters'}
         </span>
       </div>
 

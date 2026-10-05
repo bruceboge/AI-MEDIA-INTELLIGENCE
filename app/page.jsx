@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Navbar from '@/components/Navbar';
 import DynamicSearchBar from '@/components/DynamicSearchBar';
 import KpiCards from '@/components/KpiCards';
@@ -10,6 +10,7 @@ import ArticleFeed from '@/components/ArticleFeed';
 import AuthModal from '@/components/AuthModal';
 import SocialRadarModal from '@/components/SocialRadarModal';
 import ViewDataModal from '@/components/ViewDataModal';
+import { extractTrendingHashtags } from '@/lib/trends';
 
 export default function DashboardPage() {
   const [articles, setArticles] = useState([]);
@@ -145,6 +146,9 @@ export default function DashboardPage() {
     ? report.strategicRiskLevel
     : (highRiskCount >= 5 || (articles.length > 0 && highRiskCount / articles.length > 0.15) ? 'HIGH' : (highRiskCount > 0 ? 'MEDIUM' : 'STABLE'));
 
+  // Calculate dynamic top 5 trending hashtags and topics from active articles
+  const trendingTopics = useMemo(() => extractTrendingHashtags(articles, 5), [articles]);
+
   return (
     <div style={{ minHeight: '100vh', background: '#071324', color: '#ffffff' }}>
       <Navbar
@@ -208,13 +212,14 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* KPI Cards */}
+        {/* Adjusted Consolidated KPI Cards + Dynamic Swiping Trending Hashtags */}
         <KpiCards
           totalStories={articles.length}
           rssCount={rssCount}
           socialCount={socialCount}
-          corroboratedCount={articles.filter(a => (a.sourceCount || 1) >= 2).length}
           riskLevel={computedRisk}
+          trends={trendingTopics}
+          onSelectTag={(tag) => handleDynamicSearch({ query: tag.replace('#', '') })}
         />
 
         {/* Middle Analytics Grid (Dynamically Calculated from Database Items) */}
