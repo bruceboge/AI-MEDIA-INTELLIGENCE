@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import DynamicSearchBar from '@/components/DynamicSearchBar';
 import KpiCards from '@/components/KpiCards';
@@ -21,6 +22,8 @@ export default function DashboardPage() {
   const [viewDataOpen, setViewDataOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
+  const [investigationData, setInvestigationData] = useState(null);
+  const [isInvestigating, setIsInvestigating] = useState(false);
 
   // Extraction loading states
   const [isExtractingRss, setIsExtractingRss] = useState(false);
@@ -103,6 +106,7 @@ export default function DashboardPage() {
       if (data.success) {
         showToast('🔄 Complete system reset done. Cache shields cleared.');
         setReport(null);
+        setInvestigationData(null);
         setActiveSession(null);
         await loadInitialData();
       }
@@ -115,8 +119,9 @@ export default function DashboardPage() {
 
   const handleDynamicSearch = async ({ query, category, customPrompt }) => {
     setIsSearching(true);
+    setIsInvestigating(true);
     try {
-      const res = await fetch('/api/search', {
+      const searchPromise = fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -125,16 +130,35 @@ export default function DashboardPage() {
           customPrompt,
           userId: user ? user.id : 'anon'
         })
-      });
+      }).then(r => r.json());
 
-      const data = await res.json();
-      if (data.items) setArticles(data.items);
-      if (data.report) setReport(data.report);
-      if (data.sessionId) setActiveSession(data.sessionId);
+      const investigatePromise = fetch('/api/investigate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      }).then(r => r.json());
+
+      const [searchRes, investigateRes] = await Promise.allSettled([searchPromise, investigatePromise]);
+
+      if (searchRes.status === 'fulfilled' && searchRes.value) {
+        if (searchRes.value.items) setArticles(searchRes.value.items);
+        if (searchRes.value.report) setReport(searchRes.value.report);
+        if (searchRes.value.sessionId) setActiveSession(searchRes.value.sessionId);
+      }
+
+      if (investigateRes.status === 'fulfilled' && investigateRes.value && investigateRes.value.success) {
+        const inv = investigateRes.value;
+        setInvestigationData(inv);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('current_investigation', JSON.stringify(inv));
+        }
+        showToast(`📰 Broadsheet Feature Ready: "${inv.report?.headline?.slice(0, 45)}..."`);
+      }
     } catch (err) {
-      console.error('Search error:', err);
+      console.error('Search / Investigation error:', err);
     } finally {
       setIsSearching(false);
+      setIsInvestigating(false);
     }
   };
 
@@ -187,6 +211,151 @@ export default function DashboardPage() {
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px 24px' }}>
         {/* Dynamic Investigation Bar */}
         <DynamicSearchBar onSearch={handleDynamicSearch} isSearching={isSearching} />
+
+        {/* Loading Indicator for Deep Investigative Broadsheet */}
+        {isInvestigating && (
+          <div style={{
+            background: '#091628',
+            border: '1px solid #1c3554',
+            borderLeft: '4px solid #e4a83b',
+            borderRadius: '4px',
+            padding: '18px 24px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{
+              width: '24px',
+              height: '24px',
+              border: '3px solid #142945',
+              borderTop: '3px solid #e4a83b',
+              borderRadius: '50%',
+              display: 'inline-block'
+            }} />
+            <div>
+              <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#ffffff' }}>
+                📰 Composing Broadsheet Investigative Feature...
+              </div>
+              <div style={{ fontSize: '12px', color: '#8fa3bf', marginTop: '2px' }}>
+                Harvesting real-time dispatches from Daily Nation, Standard, Citizen, KBC & 𝕏, then synthesizing deep narrative with Google Gemini.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Broadsheet Notification Card with 1-Click Redirect to Dedicated Page */}
+        {investigationData && (
+          <div style={{
+            background: 'linear-gradient(135deg, #091a33 0%, #0d2547 100%)',
+            border: '1px solid #e4a83b',
+            borderLeft: '5px solid #e4a83b',
+            borderRadius: '4px',
+            padding: '20px 24px',
+            marginBottom: '26px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+            position: 'relative'
+          }}>
+            <div style={{ flex: 1, minWidth: '300px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '18px' }}>📰</span>
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 900,
+                  color: '#e4a83b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px'
+                }}>
+                  Special Broadsheet Dossier Ready
+                </span>
+                <span style={{
+                  fontSize: '10.5px',
+                  background: '#142945',
+                  color: '#cbd5e1',
+                  padding: '2px 8px',
+                  borderRadius: '10px'
+                }}>
+                  ⏱️ {investigationData.report?.readingTimeMinutes || 5} min read
+                </span>
+                <span style={{
+                  fontSize: '10.5px',
+                  background: '#112747',
+                  color: '#38bdf8',
+                  padding: '2px 8px',
+                  borderRadius: '10px'
+                }}>
+                  ⚡ {investigationData.sources?.length || 0} Sources Corroborated
+                </span>
+              </div>
+
+              <h2 style={{
+                margin: '0 0 6px',
+                fontFamily: 'Georgia, serif',
+                fontSize: '20px',
+                color: '#ffffff',
+                lineHeight: 1.3
+              }}>
+                {investigationData.report?.headline}
+              </h2>
+
+              <p style={{
+                margin: 0,
+                fontSize: '13px',
+                color: '#94a3b8',
+                lineHeight: 1.45,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}>
+                {investigationData.report?.subhead || investigationData.report?.executiveBrief}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Link
+                href={`/investigation?id=${investigationData.id}`}
+                className="btn-gold"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 22px',
+                  fontSize: '13.5px',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  borderRadius: '3px',
+                  boxShadow: '0 4px 16px rgba(228, 168, 59, 0.4)'
+                }}
+              >
+                <span>Read Full Investigation</span>
+                <span style={{ fontSize: '16px' }}>→</span>
+              </Link>
+
+              <button
+                onClick={() => setInvestigationData(null)}
+                style={{
+                  background: '#112747',
+                  border: '1px solid #1d3b63',
+                  color: '#8fa3bf',
+                  padding: '10px 12px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  borderRadius: '3px'
+                }}
+                title="Dismiss Banner"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Executive Strategic Brief Banner (When AI report is active) */}
         {report && (

@@ -889,7 +889,7 @@ DO NOT include markdown fences like \`\`\`json. Return ONLY the raw JSON object 
   if (apiKey && apiKey.length > 10) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const modelNames = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
+      const modelNames = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
       let lastErr = null;
 
       for (const mName of modelNames) {
@@ -2031,7 +2031,7 @@ app.post('/api/topics/scan', async (req, res) => {
   if (apiKey && apiKey.length > 10 && allTopicArticles.length > 0) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const modelNames = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
+      const modelNames = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
       const articlePayload = allTopicArticles.map((a, i) => ({
         index: i + 1, title: a.title, source: a.sourceName, date: a.pubDate, summary: a.summary
       }));
